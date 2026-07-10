@@ -595,10 +595,6 @@
 No constituye una conclusión definitiva ni reemplaza la validación con fuentes oficiales, operadoras, CDR, IMSI, ICCID, celdas u otros registros de corroboración.
 </div>
 
-<div class="reference-box">
-<b>⚠ Información referencial:</b> El análisis mostrado es una representación técnica-relacional basada en la información cargada en la plataforma. 
-Los resultados deben ser corroborados con fuentes oficiales, operadoras y registros complementarios antes de cualquier conclusión.
-</div>
 
 <section class="metrics">
       <div class="metric"><span>Registros</span><b id="mReg">0</b></div>
@@ -697,11 +693,7 @@ Los resultados deben ser corroborados con fuentes oficiales, operadoras y regist
         </div>
 
         <div class="view active" id="graphView">
-          <div class="graph-toolbar">
-<button class="light" onclick="zoomGraph(1)">🔍 Acercar</button>
-<button class="light" onclick="zoomGraph(-1)">🔎 Alejar</button>
-<button class="light" onclick="toggleGraphFull()">⛶ Expandir</button>
-</div>
+          
 <div class="graph-toolbar">
 <button class="light" onclick="zoomGraph(1)">🔍 Acercar</button>
 <button class="light" onclick="zoomGraph(-1)">🔎 Alejar</button>
@@ -1762,17 +1754,6 @@ function toggleGraphFull(){
 
 </script>
 
-<script>
-let graphZoom=1;
-function zoomGraph(v){
- graphZoom=Math.max(.5,Math.min(2,graphZoom+(v*.15)));
- const s=document.getElementById("graph");
- if(s){s.style.transform=`scale(${graphZoom})`;s.style.transformOrigin="center";}
-}
-function toggleGraphFull(){
- const g=document.getElementById("graphWrap");
- if(g)g.classList.toggle("fullscreen");
-}
-</script>
+
 </body>
 </html>
