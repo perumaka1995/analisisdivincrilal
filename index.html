@@ -39,10 +39,7 @@
     }
 
     .hero{
-      /* Ajustado para que la cabecera completa encaje sin cortarse.
-         La imagen generada tiene proporción aproximada 1916x821,
-         por eso la altura usa 42.85vw. */
-      height:clamp(260px, 42.85vw, 820px);
+      height:clamp(170px, 24vw, 420px);
       background:
         linear-gradient(90deg, rgba(0,0,0,.02), rgba(0,0,0,.02)),
         url("cabecera_inteligencia.png") center top / 100% auto no-repeat;
@@ -483,7 +480,7 @@
     }
     @media(max-width:900px){
       .metrics{grid-template-columns:repeat(2,1fr)}
-      .hero{height:clamp(220px, 42.85vw, 820px)}
+      .hero{height:clamp(160px, 24vw, 360px)}
       .nav-inner{align-items:flex-start;flex-wrap:wrap}
       .brand{width:calc(100% - 60px)}
     }
@@ -491,7 +488,7 @@
       main{padding:14px}
       .metrics{grid-template-columns:1fr}
       .row{grid-template-columns:1fr}
-      .hero{height:clamp(180px, 42.85vw, 820px)}
+      .hero{height:clamp(140px, 24vw, 300px)}
       .nav a{font-size:12px;padding:8px}
     }
   </style>
