@@ -2115,7 +2115,7 @@ function pdfHeader(doc, objective){
   doc.setFont("helvetica","italic");
   doc.setFontSize(8);
   doc.setTextColor(120,120,120);
-  doc.text("RESERVADO - Análisis técnico objetivo " + (objective||"N/S"), w-12, 8, {align:"right"});
+  doc.text("RESERVADO - Análisis técnico objetivo " + (objective||doc.__reportObjective||"N/S"), w-12, 8, {align:"right"});
 }
 function pdfFooter(doc){
   const pageCount = doc.internal.getNumberOfPages();
@@ -2126,52 +2126,80 @@ function pdfFooter(doc){
     doc.setFont("helvetica","normal");
     doc.setFontSize(8);
     doc.setTextColor(80,80,80);
-    doc.text("Página " + i, w/2, h-8, {align:"center"});
+    doc.text("Página " + i + " de " + pageCount, w/2, h-8, {align:"center"});
   }
 }
+function newPdfPage(doc, objective){
+  doc.addPage();
+  pdfHeader(doc, objective || doc.__reportObjective);
+  return 18;
+}
+function ensurePage(doc, y, need=12, objective){
+  const bottomLimit=278;
+  if(y + need > bottomLimit) return newPdfPage(doc, objective);
+  return y;
+}
 function pdfSection(doc, title, y){
+  y=ensurePage(doc,y,14,doc.__reportObjective);
   doc.setFont("helvetica","bold");
   doc.setFontSize(17);
   doc.setTextColor(31, 58, 95);
-  doc.text(title, 12, y);
-  return y+8;
+  const lines=doc.splitTextToSize(title,186);
+  doc.text(lines, 12, y);
+  return y + lines.length*7.2 + 2;
 }
 function pdfSub(doc, title, y){
+  y=ensurePage(doc,y,11,doc.__reportObjective);
   doc.setFont("helvetica","bold");
   doc.setFontSize(12.5);
   doc.setTextColor(31, 58, 95);
-  doc.text(title, 12, y);
-  return y+6;
+  const lines=doc.splitTextToSize(title,186);
+  doc.text(lines, 12, y);
+  return y + lines.length*5.8 + 1;
 }
 function pdfPara(doc, text, y, size=10.2){
   doc.setFont("helvetica","normal");
   doc.setFontSize(size);
   doc.setTextColor(25,25,25);
-  const lines=doc.splitTextToSize(text, 186);
-  doc.text(lines, 12, y);
-  return y + lines.length*5.1 + 3;
-}
-function ensurePage(doc, y, need, objective){
-  if(y + need > 277){
-    doc.addPage();
-    pdfHeader(doc, objective);
-    return 18;
+  const width=184;
+  const lineHeight=Math.max(4.2,size*.48);
+  const lines=doc.splitTextToSize(String(text||""), width);
+  for(const line of lines){
+    y=ensurePage(doc,y,lineHeight+2,doc.__reportObjective);
+    doc.text(line, 12, y);
+    y+=lineHeight;
   }
-  return y;
+  return y+2.2;
 }
 function autoTableStyled(doc, head, body, startY, opts={}){
+  startY=ensurePage(doc,startY,18,doc.__reportObjective);
+  const userDidDrawPage=opts.didDrawPage;
+  const baseStyles={fontSize:8, cellPadding:1.55, overflow:"linebreak", lineColor:[50,50,50], lineWidth:.15, valign:"top"};
+  const mergedStyles={...baseStyles,...(opts.styles||{})};
+  const mergedMargin={top:16,bottom:16,left:12,right:12,...(opts.margin||{})};
+  const config={...opts};
+  delete config.styles;
+  delete config.margin;
+  delete config.didDrawPage;
   doc.autoTable({
     head:[head],
-    body,
+    body:body && body.length ? body : [["Sin información disponible"]],
     startY,
     theme:"grid",
-    styles:{fontSize:8, cellPadding:1.8, overflow:"linebreak", lineColor:[50,50,50], lineWidth:.15},
-    headStyles:{fillColor:[31,58,95], textColor:[255,255,255], halign:"center", fontStyle:"bold"},
-    alternateRowStyles:{fillColor:[255,248,226]},
-    margin:{left:12,right:12},
-    ...opts
+    pageBreak:"auto",
+    rowPageBreak:"avoid",
+    showHead:"everyPage",
+    styles:mergedStyles,
+    headStyles:{fillColor:[31,58,95], textColor:[255,255,255], halign:"center", fontStyle:"bold", ...(opts.headStyles||{})},
+    alternateRowStyles:{fillColor:[255,248,226], ...(opts.alternateRowStyles||{})},
+    margin:mergedMargin,
+    didDrawPage:(data)=>{
+      pdfHeader(doc,doc.__reportObjective);
+      if(typeof userDidDrawPage==="function") userDidDrawPage(data);
+    },
+    ...config
   });
-  return doc.lastAutoTable.finalY + 7;
+  return Math.min(doc.lastAutoTable.finalY + 5, 280);
 }
 function relationStrengthRows(s){
   const rows=[];
@@ -2230,6 +2258,7 @@ async function generateIntelligencePDF(){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("p","mm","a4");
   const s = buildReportSummary();
+  doc.__reportObjective = s.objective;
   const today = new Date().toLocaleDateString("es-PE", {year:"numeric", month:"long", day:"numeric"});
 
   // Página 1
@@ -2285,7 +2314,7 @@ async function generateIntelligencePDF(){
   doc.setFont("helvetica","normal");
   doc.setFontSize(9.8);
   doc.setTextColor(25,25,25);
-  bullets.forEach(b=>{ const lines=doc.splitTextToSize("• "+b, 184); doc.text(lines, 14, y); y+=lines.length*4.8+1; });
+  bullets.forEach(b=>{ y=pdfPara(doc,"• "+b,y,9.8); });
   y+=3;
   y=autoTableStyled(doc, ["Indicador","Resultado"], [
     ["Número objetivo", fmtPhone(s.objective)],
@@ -2298,15 +2327,13 @@ async function generateIntelligencePDF(){
     ["Nivel de relación", s.mainDni ? "ALTO para identificación administrativa; MEDIO/ALTO para red técnica por IMEI" : "MEDIO para red técnica; pendiente titularidad"]
   ], y, {columnStyles:{0:{fontStyle:"bold",cellWidth:62},1:{cellWidth:120}}});
 
-  // Página 3: personas
-  doc.addPage();
-  pdfHeader(doc, s.objective);
-  y=18;
+  // Sección II: continúa en la misma página cuando existe espacio
+  y=ensurePage(doc,y,20,s.objective);
   y=pdfSection(doc, "II. PERSONAS / DOCUMENTOS IDENTIFICADOS EN LA RED TÉCNICA", y);
   const dniOrder = countMap(s.network.map(r=>r.dni)).map(x=>x[0]).filter(Boolean).slice(0,6);
   if(!dniOrder.length){ y=pdfPara(doc, "No se identificaron DNI/documentos en los registros cargados.", y); }
   dniOrder.forEach((dni,idx)=>{
-    y=ensurePage(doc,y,55,s.objective);
+    y=ensurePage(doc,y,24,s.objective);
     const name=getNameForDni(dni);
     y=pdfSub(doc, `2.${idx+1} ${name ? name+" - " : ""}DNI ${dni}`, y);
     const nums=uniq(s.network.filter(r=>r.dni===dni).map(r=>r.numero));
@@ -2320,6 +2347,7 @@ async function generateIntelligencePDF(){
       ["IMEI relacionado(s)", imeiRel.join(" / ") || "N/S"],
       ["Operadoras observadas", uniq(s.network.filter(r=>r.dni===dni).map(r=>opShort(r.operadora))).join(" / ") || "N/S"]
     ], y, {styles:{fontSize:7.6, cellPadding:1.4}, columnStyles:{0:{fontStyle:"bold",cellWidth:50},1:{cellWidth:132}}});
+    y=ensurePage(doc,y,20,s.objective);
     doc.setFont("helvetica","bold");
     doc.setFontSize(9.6);
     doc.setTextColor(190,0,0);
@@ -2328,10 +2356,8 @@ async function generateIntelligencePDF(){
     y=pdfPara(doc, `El documento DNI ${dni} aparece en ${s.network.filter(r=>r.dni===dni).length} evento(s) dentro de la red analizada. Su relación debe corroborarse con registros de operadora, validación oficial de identidad y datos técnicos de uso real.`, y, 9);
   });
 
-  // Página 4: líneas e IMEI
-  doc.addPage();
-  pdfHeader(doc, s.objective);
-  y=18;
+  // Sección III: flujo continuo, sin página forzada
+  y=ensurePage(doc,y,22,s.objective);
   y=pdfSection(doc, "III. LÍNEAS TELEFÓNICAS E IMEI RELACIONADOS", y);
   y=pdfSub(doc, "3.1 Número objetivo: " + fmtPhone(s.objective), y);
   y=autoTableStyled(doc, ["Campo","Dato"], [
@@ -2343,7 +2369,7 @@ async function generateIntelligencePDF(){
   ], y, {columnStyles:{0:{fontStyle:"bold",cellWidth:55},1:{cellWidth:127}}});
 
   s.imeiStats.slice(0,4).forEach((st,idx)=>{
-    y=ensurePage(doc,y,70,s.objective);
+    y=ensurePage(doc,y,24,s.objective);
     y=pdfSub(doc, `3.${idx+2} IMEI ${st.imei} - ${idx===0 ? "ESLABÓN TÉCNICO PRINCIPAL" : "ESLABÓN TÉCNICO"}`, y);
     const rows=st.rows.slice(0,18).map(r=>[
       r.numero || "N/S",
@@ -2356,41 +2382,47 @@ async function generateIntelligencePDF(){
     y=pdfPara(doc, `Conclusión del IMEI ${st.imei}: enlaza ${st.nums.length} número(s) y ${st.dnis.length} documento(s). Debe verificarse circulación del equipo, multi-SIM, préstamo/reventa o posible duplicidad/clonación mediante IMSI, ICCID, CDR y celdas.`, y, 9.2);
   });
 
-  // Página 5: cadena de evidencia
-  doc.addPage();
-  pdfHeader(doc, s.objective);
-  y=18;
+  // Sección IV: flujo continuo, sin página forzada
+  y=ensurePage(doc,y,22,s.objective);
   y=pdfSection(doc, "IV. CADENA DE EVIDENCIA: TITULARIDAD Y VINCULACIÓN DEL OBJETIVO", y);
   y=pdfSub(doc, "4.1 Titularidad / activación del número " + s.objective, y);
   const titRows = s.titulares.length ? s.titulares.map((r,i)=>[i+1, r.numero||s.objective, r.dni ? "DNI "+r.dni : "N/S", r.nombre||"N/S", opShort(r.operadora), r.fecha_hora||"N/S"]) : [[1,s.objective,"N/S","N/S","N/S","N/S"]];
   y=autoTableStyled(doc, ["Item","Número","Documento","Nombre","Operadora","Fecha activación"], titRows, y, {styles:{fontSize:7.2, cellPadding:1.1}});
   y=pdfPara(doc, "Lectura: los registros de titularidad permiten orientar la identificación administrativa del número objetivo, sin sustituir la certificación oficial de la operadora.", y, 9.2);
 
-  y=ensurePage(doc,y,70,s.objective);
+  y=ensurePage(doc,y,24,s.objective);
   y=pdfSub(doc, "4.2 Vinculaciones directas del número " + s.objective, y);
   const dirRows = s.directVinc.length ? s.directVinc.map((r,i)=>[i+1, r.imei||"N/S", r.fecha_hora||"N/S", opShort(r.operadora), r.dni?"DNI "+r.dni:"N/S", r.tipo||"Vinculación"]) : [[1,"N/S","N/S","N/S","N/S","Sin eventos directos"]];
   y=autoTableStyled(doc, ["Item","IMEI","Fecha/hora","Operadora","Documento","Tipo"], dirRows, y, {styles:{fontSize:7.2, cellPadding:1.1}});
   y=pdfPara(doc, "Lectura: los eventos directos permiten establecer la relación número-IMEI-documento en fechas concretas.", y, 9.2);
 
-  y=ensurePage(doc,y,70,s.objective);
+  y=ensurePage(doc,y,24,s.objective);
   y=pdfSub(doc, "4.3 Matriz de relación por fuerza probatoria", y);
   y=autoTableStyled(doc, ["Relación","Fuerza","Motivo","Acción de corroboración"], relationStrengthRows(s), y, {styles:{fontSize:7.1, cellPadding:1.1}, columnStyles:{0:{cellWidth:46},1:{cellWidth:23},2:{cellWidth:58},3:{cellWidth:55}}});
 
-  // Página 6: mapa relacional
-  doc.addPage();
-  pdfHeader(doc, s.objective);
-  y=18;
+  // Sección V: flujo continuo, sin página forzada
+  y=ensurePage(doc,y,22,s.objective);
   y=pdfSection(doc, "V. MAPA RELACIONAL PARA IBM i2", y);
   y=pdfPara(doc, "El siguiente esquema resume los nodos y vínculos principales para comprensión rápida. En i2, el número objetivo debe ir como nodo central, con enlaces hacia sus IMEI, documentos/personas y números relacionados por IMEI compartido.", y);
   const graphImg = await captureCurrentGraphForPDF(s);
   if(graphImg){
-    doc.addImage(graphImg, "PNG", 16, y, 178, 100);
-    y += 108;
+    const minGraphHeight=62;
+    let available=274-y;
+    if(available < minGraphHeight+13){
+      y=newPdfPage(doc,s.objective);
+      available=274-y;
+    }
+    const graphH=Math.min(96,available-13);
+    const graphW=Math.min(178,graphH*(900/520));
+    const graphX=(210-graphW)/2;
+    doc.addImage(graphImg, "PNG", graphX, y, graphW, graphH);
+    y += graphH+6;
     doc.setFont("helvetica","italic");
     doc.setFontSize(8.5);
     doc.setTextColor(40,40,40);
-    doc.text(`Figura 1. Relación central del número objetivo ${s.objective} por titularidad e IMEI compartido.`, 105, y, {align:"center"});
-    y+=10;
+    const caption=doc.splitTextToSize(`Figura 1. Relación central del número objetivo ${s.objective} por titularidad e IMEI compartido.`,180);
+    doc.text(caption,105,y,{align:"center"});
+    y+=caption.length*4+4;
   }
   y=pdfSub(doc, "5.1 Lectura del grafo", y);
   const graphBullets=[
@@ -2402,12 +2434,10 @@ async function generateIntelligencePDF(){
   doc.setFont("helvetica","normal");
   doc.setFontSize(9.8);
   doc.setTextColor(25,25,25);
-  graphBullets.forEach(b=>{ const lines=doc.splitTextToSize("• "+b,184); doc.text(lines,14,y); y+=lines.length*4.8+1; });
+  graphBullets.forEach(b=>{ y=pdfPara(doc,"• "+b,y,9.8); });
 
-  // Página 7: hipótesis
-  doc.addPage();
-  pdfHeader(doc, s.objective);
-  y=18;
+  // Sección VI: flujo continuo, sin página forzada
+  y=ensurePage(doc,y,22,s.objective);
   y=pdfSection(doc, "VI. ANÁLISIS DE HIPÓTESIS Y MODUS TÉCNICO", y);
   y=pdfSub(doc, "6.1 Hipótesis principal", y);
   y=pdfPara(doc, `El número objetivo ${s.objective} se encuentra administrativamente asociado a los documentos identificados y técnicamente enlazado a una red de números por el uso de ${s.imeiStats.length} IMEI. El IMEI ${s.imeiStats[0]?.imei || "N/S"} es el principal conector por cantidad de eventos y líneas asociadas.`, y);
@@ -2420,7 +2450,7 @@ async function generateIntelligencePDF(){
     "Registro histórico no vigente o error administrativo."
   ];
   hyps.forEach(h=>{y=pdfPara(doc,"• "+h,y,9.5)});
-  y=ensurePage(doc,y,70,s.objective);
+  y=ensurePage(doc,y,24,s.objective);
   y=pdfSection(doc, "VII. ACCIONES INMEDIATAS RECOMENDADAS", y);
   y=autoTableStyled(doc, ["Prioridad","Entidad","Dato base","Requerimiento","Finalidad"], [
     [1,"Operadora móvil",s.objective,"Titularidad histórica, contrato, biometría/validación, portabilidad, reposiciones SIM, IMSI, ICCID, CDR voz/SMS/datos y celdas.","Confirmar uso real de la línea y titularidad vigente."],
@@ -2429,10 +2459,8 @@ async function generateIntelligencePDF(){
     [4,"i2 / análisis de inteligencia","Matriz generada","Importar nodos y vínculos; marcar fuerza probatoria y fechas.","Visualizar red y priorizar diligencias."]
   ], y, {styles:{fontSize:6.8, cellPadding:1.1}, columnStyles:{0:{cellWidth:17},1:{cellWidth:35},2:{cellWidth:34},3:{cellWidth:60},4:{cellWidth:36}}});
 
-  // Página final: conclusiones y anexo
-  doc.addPage();
-  pdfHeader(doc, s.objective);
-  y=18;
+  // Secciones finales: flujo continuo, sin página forzada
+  y=ensurePage(doc,y,22,s.objective);
   y=pdfSection(doc, "VIII. CONCLUSIONES", y);
   const concl=[
     `PRIMERA: El número objetivo ${s.objective} presenta ${s.mainDni ? "identificación administrativa asociada al DNI "+s.mainDni+(s.mainName ? " / "+s.mainName : "") : "identificación administrativa pendiente de consolidación"}.`,
@@ -2441,7 +2469,7 @@ async function generateIntelligencePDF(){
     "CUARTA: La evidencia permite orientar diligencias e identificación preliminar, pero la atribución de autoría debe cerrarse con requerimientos oficiales a operadoras y validación de fuentes primarias."
   ];
   concl.forEach(c=>{y=pdfPara(doc,c,y,9.7)});
-  y=ensurePage(doc,y,80,s.objective);
+  y=ensurePage(doc,y,24,s.objective);
   y=pdfSection(doc, "IX. ANEXO: DATOS PARA CARGA EN IBM i2", y);
   const anexo=[];
   anexo.push(["Teléfono",s.objective,"TEL "+s.objective,"OBJETIVO"]);
