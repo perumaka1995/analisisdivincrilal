@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Área de Análisis de Inteligencia - DIVINCRI La Libertad</title>
+  <meta name="description" content="Sistema local de análisis de inteligencia y vinculaciones por número, IMEI, DNI y operadora.">
+  <style>
+    :root{
+      --pnp-green:#063d24;
+      --pnp-green-2:#0b5a34;
+      --pnp-green-3:#0f7042;
+      --dark:#06160f;
+      --gold:#d7aa34;
+      --gold-2:#f5d06e;
+      --paper:#ffffff;
+      --soft:#f4f7f5;
+      --line:#d7e2da;
+      --text:#18251e;
+      --muted:#627167;
+      --danger:#b91c1c;
+      --blue:#1e5fae;
+      --orange:#b56b00;
+      --purple:#6d4cc2;
+      --shadow:0 14px 40px rgba(6,22,15,.13);
+      --radius:18px;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(15,112,66,.12), transparent 30%),
+        radial-gradient(circle at bottom left, rgba(215,170,52,.09), transparent 24%),
+        #eef3ef;
+    }
+
+    .hero{
+      min-height:310px;
+      background:
+        linear-gradient(90deg, rgba(0,0,0,.05), rgba(0,0,0,.05)),
+        url("assets/cabecera_inteligencia.png") center/cover no-repeat;
+      border-bottom:4px solid var(--gold);
+      box-shadow:0 10px 35px rgba(0,0,0,.18);
+      position:relative;
+    }
+
+    .nav{
+      position:sticky;
+      top:0;
+      z-index:20;
+      background:rgba(248,250,248,.96);
+      backdrop-filter:blur(12px);
+      border-bottom:1px solid var(--line);
+      box-shadow:0 8px 24px rgba(0,0,0,.06);
+    }
+
+    .nav-inner{
+      max-width:1500px;
+      margin:auto;
+      min-height:60px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:10px 18px;
+    }
+
+    .mini-logo{
+      width:42px;
+      height:42px;
+      border-radius:12px;
+      object-fit:cover;
+      border:1px solid rgba(215,170,52,.55);
+      box-shadow:0 7px 18px rgba(6,61,36,.18);
+      background:white;
+    }
+
+    .brand{
+      font-weight:900;
+      color:var(--pnp-green);
+      letter-spacing:.3px;
+      margin-right:auto;
+      line-height:1.15;
+    }
+    .brand small{
+      display:block;
+      color:var(--muted);
+      font-size:11px;
+      font-weight:700;
+      margin-top:2px;
+    }
+
+    .nav a{
+      text-decoration:none;
+      color:#24352b;
+      padding:10px 12px;
+      border-radius:12px;
+      font-size:14px;
+      font-weight:700;
+    }
+    .nav a:hover,.nav a.active{
+      background:var(--pnp-green);
+      color:#fff;
+    }
+
+    main{
+      max-width:1500px;
+      margin:auto;
+      padding:20px;
+    }
+
+    .metrics{
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:14px;
+      margin-top:4px;
+    }
+
+    .metric{
+      background:var(--paper);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:17px;
+      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .metric:before{
+      content:"";
+      position:absolute;
+      top:0;
+      left:0;
+      right:0;
+      height:4px;
+      background:linear-gradient(90deg,var(--pnp-green),var(--gold));
+    }
+
+    .metric span{
+      display:block;
+      color:var(--muted);
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.4px;
+      font-weight:800;
+    }
+
+    .metric b{
+      display:block;
+      color:var(--pnp-green);
+      font-size:31px;
+      margin-top:4px;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns:390px 1fr;
+      gap:18px;
+      margin-top:18px;
+      align-items:start;
+    }
+
+    .panel{
+      background:var(--paper);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .panel h2{
+      margin:0;
+      padding:15px 17px;
+      font-size:14px;
+      letter-spacing:.35px;
+      color:var(--pnp-green);
+      background:linear-gradient(180deg,#ffffff,#f5f8f5);
+      border-bottom:1px solid var(--line);
+    }
+
+    .panel-body{padding:17px}
+
+    label{
+      display:block;
+      color:var(--muted);
+      font-size:12px;
+      font-weight:800;
+      margin:0 0 7px;
+    }
+
+    input, textarea, select{
+      width:100%;
+      border:1px solid #cbd8ce;
+      border-radius:13px;
+      background:white;
+      color:var(--text);
+      padding:12px 13px;
+      outline:none;
+      font-size:14px;
+    }
+    input:focus,textarea:focus{
+      border-color:var(--pnp-green-3);
+      box-shadow:0 0 0 4px rgba(15,112,66,.10);
+    }
+
+    textarea{
+      min-height:145px;
+      resize:vertical;
+      font-family:Consolas, "Courier New", monospace;
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .btns{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+
+    button,.btn{
+      border:0;
+      background:linear-gradient(180deg,var(--pnp-green-2),var(--pnp-green));
+      color:white;
+      padding:11px 14px;
+      border-radius:13px;
+      cursor:pointer;
+      font-size:13px;
+      font-weight:900;
+      box-shadow:0 8px 20px rgba(6,61,36,.20);
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+    }
+    button:hover,.btn:hover{filter:brightness(1.06)}
+    button.gold{background:linear-gradient(180deg,#d2a12b,#ad7b08)}
+    button.gray{background:linear-gradient(180deg,#65756b,#4d5d53)}
+    button.red{background:linear-gradient(180deg,#c2414b,#991b1b)}
+    button.blue{background:linear-gradient(180deg,#2563eb,#1e40af)}
+
+    .hint{
+      margin-top:13px;
+      color:#415248;
+      background:#f8fbf8;
+      border:1px dashed #c8d7cc;
+      border-radius:14px;
+      padding:12px;
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      padding:10px;
+      background:#f8fbf8;
+      border-bottom:1px solid var(--line);
+    }
+
+    .tab{
+      color:#33463b;
+      background:white;
+      border:1px solid #d5e0d8;
+      box-shadow:none;
+      padding:9px 12px;
+    }
+    .tab.active{
+      color:white;
+      background:linear-gradient(180deg,var(--pnp-green-2),var(--pnp-green));
+      border-color:var(--pnp-green);
+    }
+
+    .view{display:none}
+    .view.active{display:block}
+
+    #graphWrap{
+      height:650px;
+      background:
+        linear-gradient(rgba(0,0,0,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,.04) 1px, transparent 1px),
+        #f7faf7;
+      background-size:28px 28px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    svg{width:100%;height:100%;display:block}
+    .edge{stroke:#6b7a70;stroke-width:1.4}
+    .edge.strong{stroke:#25382d;stroke-width:2.1}
+    .edge-label{
+      fill:#34483c;
+      font-size:10px;
+      paint-order:stroke;
+      stroke:#f7faf7;
+      stroke-width:3px;
+    }
+    .node{cursor:pointer}
+    .node text{
+      fill:#13231a;
+      font-size:10.5px;
+      font-weight:800;
+      paint-order:stroke;
+      stroke:#f7faf7;
+      stroke-width:4px;
+    }
+
+    .legend{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      padding:12px 14px;
+      border-top:1px solid var(--line);
+      background:#ffffff;
+    }
+    .legend span{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      color:#4b5e52;
+      font-size:12px;
+      font-weight:700;
+    }
+    .sw{
+      width:12px;
+      height:12px;
+      border-radius:3px;
+      display:inline-block;
+      border:1px solid rgba(0,0,0,.14);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:12px;
+    }
+    .table-wrap{max-height:650px;overflow:auto}
+    th,td{
+      padding:10px;
+      border-bottom:1px solid #e3ebe5;
+      text-align:left;
+      vertical-align:top;
+    }
+    th{
+      position:sticky;
+      top:0;
+      background:#f3f8f4;
+      color:#244131;
+      z-index:1;
+    }
+    tr:hover td{background:#f8fbf8}
+
+    .tag{
+      display:inline-flex;
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:900;
+    }
+    .tag.num{background:#e9f1ff;color:var(--blue)}
+    .tag.imei{background:#e6f6ec;color:var(--pnp-green-2)}
+    .tag.dni{background:#fff3d7;color:var(--orange)}
+
+    .split{
+      display:grid;
+      grid-template-columns:1.08fr .92fr;
+      gap:18px;
+      margin-top:18px;
+    }
+
+    .detail{
+      background:#fbfdfb;
+      border:1px solid #dce8df;
+      border-radius:15px;
+      padding:14px;
+      margin-bottom:12px;
+    }
+    .detail h3{
+      margin:0 0 8px;
+      font-size:14px;
+      color:var(--pnp-green);
+    }
+    .detail p{
+      margin:6px 0;
+      color:#4d5d53;
+      line-height:1.45;
+      font-size:12px;
+    }
+
+    .timeline{padding:5px 3px 0}
+    .event{
+      display:grid;
+      grid-template-columns:122px 1fr;
+      gap:12px;
+      position:relative;
+      padding-bottom:14px;
+    }
+    .event:before{
+      content:"";
+      position:absolute;
+      left:103px;
+      top:18px;
+      bottom:0;
+      width:1px;
+      background:#d1ded5;
+    }
+    .event .date{
+      color:var(--pnp-green-2);
+      font-size:11px;
+      text-align:right;
+      font-weight:900;
+      padding-top:4px;
+    }
+    .event .box{
+      border:1px solid #dce8df;
+      background:#fbfdfb;
+      border-radius:13px;
+      padding:10px;
+    }
+    .event b{font-size:12px;color:#1d3426}
+    .event p{margin:4px 0 0;font-size:11px;color:var(--muted)}
+
+    .report{
+      white-space:pre-wrap;
+      max-height:650px;
+      overflow:auto;
+      background:#fbfdfb;
+      border:1px solid #dce8df;
+      border-radius:15px;
+      padding:16px;
+      font-family:Consolas, "Courier New", monospace;
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    .empty{
+      color:var(--muted);
+      text-align:center;
+      padding:34px 20px;
+    }
+
+    .footer{
+      margin-top:18px;
+      text-align:center;
+      color:#65746a;
+      font-size:11px;
+      line-height:1.5;
+    }
+
+    .toast{
+      position:fixed;
+      right:18px;
+      bottom:18px;
+      z-index:1000;
+      background:var(--pnp-green);
+      color:white;
+      padding:12px 15px;
+      border-radius:14px;
+      box-shadow:0 12px 28px rgba(0,0,0,.22);
+      display:none;
+      max-width:370px;
+      font-size:13px;
+    }
+
+    @media(max-width:1150px){
+      .layout,.split{grid-template-columns:1fr}
+      #graphWrap{height:590px}
+    }
+    @media(max-width:900px){
+      .metrics{grid-template-columns:repeat(2,1fr)}
+      .hero{min-height:230px}
+      .nav-inner{align-items:flex-start;flex-wrap:wrap}
+      .brand{width:calc(100% - 60px)}
+    }
+    @media(max-width:560px){
+      main{padding:14px}
+      .metrics{grid-template-columns:1fr}
+      .row{grid-template-columns:1fr}
+      .hero{min-height:180px}
+      .nav a{font-size:12px;padding:8px}
+    }
+  </style>
+</head>
+<body>
+
+  <header class="hero" id="inicio"></header>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <img class="mini-logo" src="assets/logo_divincri.png" alt="Logo DIVINCRI">
+      <div class="brand">
+        Área de Análisis de Inteligencia
+        <small>DIVINCRI La Libertad · Vinculaciones técnicas</small>
+      </div>
+      <a class="active" href="#inicio">Inicio</a>
+      <a href="#consulta">Consulta</a>
+      <a href="#grafo">Grafo</a>
+      <a href="#informe">Informe</a>
+    </div>
+  </nav>
+
+  <main>
+    <section class="metrics">
+      <div class="metric"><span>Registros</span><b id="mReg">0</b></div>
+      <div class="metric"><span>Números</span><b id="mNum">0</b></div>
+      <div class="metric"><span>IMEI</span><b id="mImei">0</b></div>
+      <div class="metric"><span>DNI</span><b id="mDni">0</b></div>
+      <div class="metric"><span>Operadoras</span><b id="mOp">0</b></div>
+    </section>
+
+    <section class="layout" id="consulta">
+      <aside class="panel">
+        <h2>MÓDULO DE CONSULTA Y CARGA</h2>
+        <div class="panel-body">
+          <label>Buscar por número, IMEI, DNI, titular u operadora</label>
+          <input id="searchInput" placeholder="Ejemplo: 917921152 / 015887000104565 / 70821380">
+          <div class="btns">
+            <button onclick="runSearch()">Buscar vínculo</button>
+            <button class="gray" onclick="showAll()">Ver red completa</button>
+          </div>
+
+          <div class="hint">
+            <b>Formato recomendado:</b><br>
+            <code>imei,numero,fecha_hora,operadora,dni,nombre,tipo</code><br>
+            Puedes copiar desde Excel o cargar un archivo CSV/TXT.
+          </div>
+
+          <div style="margin-top:15px">
+            <label>Cargar archivo CSV/TXT</label>
+            <input type="file" id="fileInput" accept=".csv,.txt">
+            <div class="btns">
+              <button onclick="loadFile(false)">Agregar archivo</button>
+              <button class="gold" onclick="loadFile(true)">Reemplazar base</button>
+            </div>
+          </div>
+
+          <div style="margin-top:15px">
+            <label>Pegar datos desde Excel o CSV</label>
+            <textarea id="pasteArea" placeholder="imei,numero,fecha_hora,operadora,dni,nombre,tipo
+015887000104565,917921152,08/04/2026 13:39:11,VIETTEL PERU S.A.C.,70821380,MARIANA AZUCENA VILCA GALLEGOS,Vinculación"></textarea>
+            <div class="btns">
+              <button onclick="importPasted(false)">Agregar</button>
+              <button class="gold" onclick="importPasted(true)">Reemplazar</button>
+            </div>
+          </div>
+
+          <div style="margin-top:15px">
+            <label>Registro manual rápido</label>
+            <div class="row">
+              <input id="fNumero" placeholder="Número">
+              <input id="fImei" placeholder="IMEI">
+            </div>
+            <div class="row" style="margin-top:10px">
+              <input id="fDni" placeholder="DNI">
+              <input id="fFecha" placeholder="Fecha / hora">
+            </div>
+            <input id="fNombre" placeholder="Nombre / titular" style="margin-top:10px">
+            <div class="row" style="margin-top:10px">
+              <input id="fOperadora" placeholder="Operadora">
+              <input id="fTipo" placeholder="Tipo vínculo" value="Vinculación">
+            </div>
+            <button style="margin-top:10px;width:100%" onclick="addManual()">Agregar registro manual</button>
+          </div>
+
+          <div class="btns">
+            <button class="gray" onclick="exportCSV()">Exportar CSV</button>
+            <button class="gray" onclick="exportI2()">Exportar i2</button>
+            <button class="gray" onclick="exportJSON()">Exportar JSON</button>
+            <button class="red" onclick="clearDB()">Limpiar base</button>
+          </div>
+        </div>
+      </aside>
+
+      <section class="panel" id="grafo">
+        <div class="tabs">
+          <button class="tab active" onclick="openTab('graphView', this)">Grafo relacional</button>
+          <button class="tab" onclick="openTab('tableView', this)">Tabla</button>
+          <button class="tab" onclick="openTab('timeView', this)">Línea de tiempo</button>
+          <button class="tab" onclick="openTab('reportView', this)">Informe</button>
+        </div>
+
+        <div class="view active" id="graphView">
+          <div id="graphWrap"><svg id="graph"></svg></div>
+          <div class="legend">
+            <span><i class="sw" style="background:#c03945"></i> Nodo objetivo</span>
+            <span><i class="sw" style="background:#dbeafe"></i> Número</span>
+            <span><i class="sw" style="background:#dcfce7"></i> IMEI</span>
+            <span><i class="sw" style="background:#fef3c7"></i> DNI</span>
+            <span><i class="sw" style="background:#ede9fe"></i> Persona</span>
+            <span><i class="sw" style="background:#e5e7eb"></i> Operadora</span>
+          </div>
+        </div>
+
+        <div class="view" id="tableView">
+          <div class="table-wrap"><table id="resultTable"></table></div>
+        </div>
+
+        <div class="view" id="timeView">
+          <div class="panel-body"><div class="timeline" id="timeline"></div></div>
+        </div>
+
+        <div class="view" id="reportView">
+          <div class="panel-body" id="informe">
+            <div class="btns" style="margin-top:0;margin-bottom:12px">
+              <button onclick="copyReport()">Copiar informe</button>
+              <button class="gray" onclick="downloadReport()">Descargar TXT</button>
+            </div>
+            <div class="report" id="report">Realiza una búsqueda para generar el informe automático.</div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="split">
+      <div class="panel">
+        <h2>INTERPRETACIÓN ANALÍTICA</h2>
+        <div class="panel-body" id="interpretation">
+          <div class="empty">Carga datos y consulta un objetivo para ver el análisis resumido.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>DETALLE DE NODO</h2>
+        <div class="panel-body" id="nodeDetail">
+          <div class="empty">Haz clic sobre un nodo del grafo para revisar su detalle.</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">
+      Herramienta local de apoyo analítico. La vinculación por IMEI, número o DNI es un indicio técnico-administrativo que debe corroborarse con registros oficiales, operadoras, IMSI, ICCID, CDR, celdas y documentación de respaldo.
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+const SAMPLE = [
+  {imei:"015887000104565",numero:"917921152",fecha_hora:"08/04/2026 13:39:11",operadora:"VIETTEL PERU S.A.C.",dni:"70821380",nombre:"MARIANA AZUCENA VILCA GALLEGOS",tipo:"Vinculación"},
+  {imei:"864050065958357",numero:"917921152",fecha_hora:"03/07/2026 12:01:32",operadora:"VIETTEL PERU S.A.C.",dni:"70821380",nombre:"MARIANA AZUCENA VILCA GALLEGOS",tipo:"Vinculación"},
+  {imei:"015887000104565",numero:"921443078",fecha_hora:"02/07/2026 00:55:39",operadora:"VIETTEL PERU S.A.C.",dni:"70406668",nombre:"",tipo:"Vinculación"},
+  {imei:"015887000104565",numero:"900474838",fecha_hora:"25/06/2026 12:03:28",operadora:"VIETTEL PERU S.A.C.",dni:"74846562",nombre:"",tipo:"Vinculación"},
+  {imei:"015887000104565",numero:"939065891",fecha_hora:"25/06/2026 12:00:06",operadora:"TELEFONICA DEL PERU S.A.A.",dni:"70816110",nombre:"",tipo:"Vinculación"},
+  {imei:"015887000104565",numero:"938688287",fecha_hora:"22/06/2026 11:49:57",operadora:"TELEFONICA DEL PERU S.A.A.",dni:"76366071",nombre:"",tipo:"Vinculación"},
+  {imei:"015887000104565",numero:"926014324",fecha_hora:"18/06/2026 23:24:24",operadora:"VIETTEL PERU S.A.C.",dni:"45579415",nombre:"",tipo:"Vinculación"},
+  {imei:"015887000104565",numero:"900106086",fecha_hora:"07/06/2026 00:37:34",operadora:"VIETTEL PERU S.A.C.",dni:"40496087",nombre:"",tipo:"Vinculación"},
+  {imei:"015887000104565",numero:"935805213",fecha_hora:"28/05/2026 17:54:12",operadora:"VIETTEL PERU S.A.C.",dni:"43546569",nombre:"",tipo:"Vinculación"},
+  {imei:"015887000104565",numero:"917156029",fecha_hora:"17/05/2026 00:04:14",operadora:"VIETTEL PERU S.A.C.",dni:"80061063",nombre:"",tipo:"Vinculación"},
+  {imei:"015887000104565",numero:"901136805",fecha_hora:"06/05/2026 00:26:58",operadora:"VIETTEL PERU S.A.C.",dni:"73092833",nombre:"",tipo:"Vinculación"},
+  {imei:"015887000104565",numero:"930658673",fecha_hora:"25/12/2025 17:33:35",operadora:"VIETTEL PERU S.A.C.",dni:"45934175",nombre:"",tipo:"Vinculación"}
+];
+
+let DB = [];
+let CURRENT = [];
+let CURRENT_QUERY = "";
+
+function onlyDigits(s){return (s||"").toString().replace(/\D/g,"")}
+function norm(s){return (s||"").toString().trim().replace(/\s+/g," ").toUpperCase()}
+function esc(s){return (s||"").toString().replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function cleanRecord(r){
+  return {
+    imei:onlyDigits(r.imei||r.IMEI||r.Imei||""),
+    numero:onlyDigits(r.numero||r.NUMERO||r.Número||r["Número de Servicio Móvil"]||r["numero_servicio"]||""),
+    fecha_hora:(r.fecha_hora||r.fecha||r["Fecha y Hora de Vinculación/Desvinculación"]||r["Fecha Activación"]||"").toString().trim(),
+    operadora:(r.operadora||r.concesionario||r.Concesionario||r["Empresa Operadora"]||"").toString().trim(),
+    dni:onlyDigits(r.dni||r.DNI||r["Número de Doc. Legal"]||r["Número Docum. Legal"]||""),
+    nombre:(r.nombre||r.NOMBRE||r["Nombres y Apellidos Razón Social"]||"").toString().trim(),
+    tipo:(r.tipo||r.Tipo||"Vinculación").toString().trim()
+  }
+}
+function keyRecord(r){return [r.imei,r.numero,r.fecha_hora,r.operadora,r.dni,r.tipo].map(norm).join("|")}
+function dedupe(arr){
+  const seen=new Set(), out=[];
+  arr.forEach(x=>{
+    const r=cleanRecord(x);
+    if(!r.imei&&!r.numero&&!r.dni)return;
+    const k=keyRecord(r);
+    if(!seen.has(k)){seen.add(k);out.push(r)}
+  });
+  return out;
+}
+function saveDB(){
+  localStorage.setItem("divincri_inteligencia_db",JSON.stringify(DB));
+  localStorage.setItem("divincri_inteligencia_last",new Date().toLocaleString("es-PE"));
+}
+function loadDB(){
+  try{DB=JSON.parse(localStorage.getItem("divincri_inteligencia_db")||"[]")}catch(e){DB=[]}
+  if(!DB.length){DB=SAMPLE.slice();saveDB()}
+  CURRENT=DB.slice();
+  updateStats();
+  renderAll(CURRENT,"");
+}
+function updateStats(){
+  const nums=new Set(DB.map(r=>r.numero).filter(Boolean));
+  const imeis=new Set(DB.map(r=>r.imei).filter(Boolean));
+  const dnis=new Set(DB.map(r=>r.dni).filter(Boolean));
+  const ops=new Set(DB.map(r=>norm(r.operadora)).filter(Boolean));
+  document.getElementById("mReg").textContent=DB.length;
+  document.getElementById("mNum").textContent=nums.size;
+  document.getElementById("mImei").textContent=imeis.size;
+  document.getElementById("mDni").textContent=dnis.size;
+  document.getElementById("mOp").textContent=ops.size;
+}
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.style.display="block";
+  setTimeout(()=>t.style.display="none",3000);
+}
+function splitCSV(line,delim){
+  const out=[];let cur="",q=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){if(q&&line[i+1]==='"'){cur+='"';i++}else q=!q}
+    else if(ch===delim&&!q){out.push(cur);cur=""}
+    else cur+=ch
+  }
+  out.push(cur);return out;
+}
+function parseDelimited(text){
+  text=(text||"").replace(/^\uFEFF/,"").trim();
+  if(!text)return[];
+  const lines=text.split(/\r?\n/).filter(x=>x.trim());
+  const first=lines[0];
+  const delim=first.includes("\t")?"\t":(first.includes(";")&&!first.includes(","))?";":",";
+  const rows=lines.map(l=>splitCSV(l,delim));
+  let headers=rows[0].map(h=>h.trim());
+  const hasHeader=headers.some(h=>/imei|numero|número|dni|fecha|operadora|concesionario|nombre|tipo/i.test(h));
+  if(hasHeader)rows.shift();else headers=["imei","numero","fecha_hora","operadora","dni","nombre","tipo"];
+  return rows.map(cols=>{
+    const obj={};headers.forEach((h,i)=>obj[h]=cols[i]||"");return cleanRecord(obj)
+  })
+}
+function mergeRecords(records,replace){
+  const parsed=dedupe(records);
+  DB=replace?parsed:dedupe(DB.concat(parsed));
+  saveDB();updateStats();showAll();
+  toast((replace?"Base reemplazada. ":"Registros agregados: ")+parsed.length);
+}
+function importPasted(replace){mergeRecords(parseDelimited(document.getElementById("pasteArea").value),replace)}
+function loadFile(replace){
+  const f=document.getElementById("fileInput").files[0];
+  if(!f){toast("Selecciona un archivo CSV/TXT.");return}
+  const reader=new FileReader();
+  reader.onload=e=>mergeRecords(parseDelimited(e.target.result),replace);
+  reader.readAsText(f,"UTF-8");
+}
+function addManual(){
+  const rec=cleanRecord({
+    numero:document.getElementById("fNumero").value,
+    imei:document.getElementById("fImei").value,
+    dni:document.getElementById("fDni").value,
+    fecha_hora:document.getElementById("fFecha").value,
+    nombre:document.getElementById("fNombre").value,
+    operadora:document.getElementById("fOperadora").value,
+    tipo:document.getElementById("fTipo").value||"Vinculación"
+  });
+  if(!rec.numero&&!rec.imei&&!rec.dni){toast("Ingresa al menos número, IMEI o DNI.");return}
+  mergeRecords([rec],false);
+  ["fNumero","fImei","fDni","fFecha","fNombre","fOperadora"].forEach(id=>document.getElementById(id).value="")
+}
+function clearDB(){
+  if(confirm("¿Limpiar toda la base local?")){
+    DB=[];CURRENT=[];saveDB();updateStats();renderAll([],"");toast("Base limpiada.")
+  }
+}
+function runSearch(){
+  const q=document.getElementById("searchInput").value.trim();
+  CURRENT_QUERY=q;
+  if(!q){showAll();return}
+  const qd=onlyDigits(q),qn=norm(q);
+  const seed=DB.filter(r=>(qd&&[r.numero,r.imei,r.dni].some(v=>v&&v.includes(qd)))||norm(r.nombre).includes(qn)||norm(r.operadora).includes(qn));
+  const nums=new Set(seed.map(r=>r.numero).filter(Boolean));
+  const imeis=new Set(seed.map(r=>r.imei).filter(Boolean));
+  const dnis=new Set(seed.map(r=>r.dni).filter(Boolean));
+  CURRENT=dedupe(DB.filter(r=>nums.has(r.numero)||imeis.has(r.imei)||dnis.has(r.dni)));
+  renderAll(CURRENT,q);
+}
+function showAll(){
+  CURRENT_QUERY="";
+  document.getElementById("searchInput").value="";
+  CURRENT=DB.slice();
+  renderAll(CURRENT,"");
+}
+function openTab(id,btn){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  btn.classList.add("active");
+}
+function tag(v,cls){return `<span class="tag ${cls}">${esc(v)}</span>`}
+function renderTable(records){
+  const el=document.getElementById("resultTable");
+  if(!records.length){el.innerHTML=`<tr><td class="empty">Sin resultados.</td></tr>`;return}
+  el.innerHTML=`<thead><tr><th>#</th><th>IMEI</th><th>Número</th><th>DNI</th><th>Nombre</th><th>Fecha/Hora</th><th>Operadora</th><th>Tipo</th></tr></thead><tbody>`+
+  records.map((r,i)=>`<tr><td>${i+1}</td><td>${r.imei?tag(r.imei,"imei"):""}</td><td>${r.numero?tag(r.numero,"num"):""}</td><td>${r.dni?tag(r.dni,"dni"):""}</td><td>${esc(r.nombre)}</td><td>${esc(r.fecha_hora)}</td><td>${esc(r.operadora)}</td><td>${esc(r.tipo)}</td></tr>`).join("")+`</tbody>`;
+}
+function parseDatePE(s){
+  const m=(s||"").match(/(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if(m)return new Date(+m[3],+m[2]-1,+m[1],+(m[4]||0),+(m[5]||0),+(m[6]||0)).getTime();
+  const t=Date.parse(s);return isNaN(t)?0:t;
+}
+function renderTimeline(records){
+  const el=document.getElementById("timeline");
+  const sorted=records.slice().sort((a,b)=>parseDatePE(b.fecha_hora)-parseDatePE(a.fecha_hora));
+  if(!sorted.length){el.innerHTML=`<div class="empty">Sin eventos.</div>`;return}
+  el.innerHTML=sorted.map(r=>`<div class="event"><div class="date">${esc(r.fecha_hora||"Sin fecha")}</div><div class="box"><b>${esc(r.numero||"N/S")} ↔ ${esc(r.imei||"IMEI N/S")}</b><p>DNI: ${esc(r.dni||"N/S")} · ${esc(r.operadora||"S/O")} · ${esc(r.tipo||"")}</p></div></div>`).join("");
+}
+function buildNetwork(records,query){
+  const nodes=new Map(),edges=new Map();
+  const qd=onlyDigits(query),qn=norm(query);
+  function add(raw,type,label){
+    if(!raw)return;
+    const id=type+":"+raw;
+    if(!nodes.has(id)){
+      const target=!!query&&((qd&&raw.includes(qd))||norm(label||raw).includes(qn));
+      nodes.set(id,{id,raw,type,label:label||raw,target,count:0});
+    }
+    nodes.get(id).count++;
+  }
+  function edge(a,b,label,strong){
+    if(!a||!b)return;
+    const k=a+"|"+b+"|"+label;
+    if(!edges.has(k))edges.set(k,{a,b,label,strong:!!strong,count:0});
+    edges.get(k).count++;
+  }
+  records.forEach(r=>{
+    add(r.numero,"numero",r.numero);add(r.imei,"imei",r.imei);add(r.dni,"dni",r.dni);
+    if(r.nombre)add(r.nombre,"persona",r.nombre);
+    if(r.operadora)add(r.operadora,"operadora",r.operadora);
+    edge("numero:"+r.numero,"imei:"+r.imei,r.tipo||"Enlace",true);
+    edge("numero:"+r.numero,"dni:"+r.dni,"Abonado",false);
+    if(r.nombre)edge("dni:"+r.dni,"persona:"+r.nombre,"Identifica",false);
+    if(r.operadora)edge("numero:"+r.numero,"operadora:"+r.operadora,"Operadora",false);
+  });
+  return{nodes:[...nodes.values()],edges:[...edges.values()]};
+}
+function icon(type,target){
+  const stroke=target?"#7f1d1d":"#526257";
+  const fill=target?"#c03945": type==="numero"?"#dbeafe":type==="imei"?"#dcfce7":type==="dni"?"#fef3c7":type==="persona"?"#ede9fe":"#e5e7eb";
+  if(type==="numero")return `<rect x="-8" y="-14" width="16" height="28" rx="2.5" fill="${fill}" stroke="${stroke}" stroke-width="1.1"/><rect x="-5" y="-10" width="10" height="18" rx="1.3" fill="#fff" stroke="${stroke}" stroke-width=".7"/><circle cx="0" cy="11" r="1.4" fill="${stroke}"/>`;
+  if(type==="imei")return `<rect x="-10" y="-10" width="20" height="20" rx="3" fill="${fill}" stroke="${stroke}" stroke-width="1.1"/><rect x="-6" y="-6" width="12" height="12" fill="#fff" stroke="${stroke}" stroke-width=".7"/><path d="M-12 -2h4M-12 2h4M8 -2h4M8 2h4M-2 -12v4M2 -12v4M-2 8v4M2 8v4" stroke="${stroke}" stroke-width=".9" stroke-linecap="round"/>`;
+  if(type==="dni")return `<rect x="-12" y="-9" width="24" height="18" rx="2.5" fill="${fill}" stroke="${stroke}" stroke-width="1.1"/><circle cx="-5" cy="-1" r="3.1" fill="#fff" stroke="${stroke}" stroke-width=".7"/><path d="M1 -3h7M1 1h7M1 5h5" stroke="${stroke}" stroke-width=".9" stroke-linecap="round"/>`;
+  if(type==="persona")return `<circle cx="0" cy="-4" r="5" fill="#fff" stroke="${stroke}" stroke-width=".9"/><path d="M-8 10c1.7-5.5 14.3-5.5 16 0" fill="${fill}" stroke="${stroke}" stroke-width="1"/>`;
+  return `<rect x="-12" y="-9" width="24" height="18" rx="3" fill="${fill}" stroke="${stroke}" stroke-width="1.1"/><path d="M-8 -2h16M-8 2h10" stroke="${stroke}" stroke-width=".9" stroke-linecap="round"/>`;
+}
+function short(s){s=(s||"").toString();return s.length>17?s.slice(0,14)+"...":s}
+function renderGraph(records,query){
+  const svg=document.getElementById("graph");
+  svg.innerHTML="";
+  const wrap=document.getElementById("graphWrap");
+  const W=wrap.clientWidth||900,H=wrap.clientHeight||640;
+  const net=buildNetwork(records.slice(0,170),query);
+  if(!net.nodes.length){svg.innerHTML=`<text x="50%" y="50%" text-anchor="middle" fill="#65746a">Sin información para graficar</text>`;return}
+  const center=net.nodes.find(n=>n.target)||net.nodes.slice().sort((a,b)=>b.count-a.count)[0];
+  center.x=W/2;center.y=H/2;
+  const first=net.nodes.filter(n=>n.id!==center.id&&net.edges.some(e=>(e.a===center.id&&e.b===n.id)||(e.b===center.id&&e.a===n.id)));
+  const rest=net.nodes.filter(n=>n.id!==center.id&&!first.find(x=>x.id===n.id));
+  first.forEach((n,i)=>{const ang=(i/Math.max(1,first.length))*Math.PI*2-Math.PI/2;const r=Math.min(W,H)*0.25;n.x=W/2+Math.cos(ang)*r;n.y=H/2+Math.sin(ang)*r});
+  rest.forEach((n,i)=>{const p=first[i%Math.max(1,first.length)]||center;const ang=Math.atan2(p.y-H/2,p.x-W/2);const r=112+(i%3)*34;n.x=p.x+Math.cos(ang)*r;n.y=p.y+Math.sin(ang)*r});
+  net.nodes.forEach(n=>{n.x=Math.max(42,Math.min(W-42,n.x));n.y=Math.max(38,Math.min(H-38,n.y))});
+  const defs=document.createElementNS("http://www.w3.org/2000/svg","defs");
+  defs.innerHTML=`<marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#526257"/></marker>`;
+  svg.appendChild(defs);
+  net.edges.forEach(e=>{
+    const a=net.nodes.find(n=>n.id===e.a),b=net.nodes.find(n=>n.id===e.b);
+    if(!a||!b)return;
+    const line=document.createElementNS("http://www.w3.org/2000/svg","line");
+    line.setAttribute("x1",a.x);line.setAttribute("y1",a.y);line.setAttribute("x2",b.x);line.setAttribute("y2",b.y);
+    line.setAttribute("class","edge"+(e.strong?" strong":""));line.setAttribute("marker-end","url(#arrow)");
+    svg.appendChild(line);
+    const tx=document.createElementNS("http://www.w3.org/2000/svg","text");
+    tx.setAttribute("x",(a.x+b.x)/2);tx.setAttribute("y",(a.y+b.y)/2-4);tx.setAttribute("text-anchor","middle");tx.setAttribute("class","edge-label");tx.textContent=e.label||"Enlace";
+    svg.appendChild(tx);
+  });
+  net.nodes.forEach(n=>{
+    const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+    g.setAttribute("class","node");g.setAttribute("transform",`translate(${n.x},${n.y})`);
+    g.innerHTML=icon(n.type,n===center||n.target);
+    const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+    t.setAttribute("x","0");t.setAttribute("y","23");t.setAttribute("text-anchor","middle");t.textContent=short(n.label);
+    g.appendChild(t);g.onclick=()=>showNodeDetail(n,records);svg.appendChild(g);
+  });
+}
+function showNodeDetail(n,records){
+  const rel=records.filter(r=>(n.type==="numero"&&r.numero===n.raw)||(n.type==="imei"&&r.imei===n.raw)||(n.type==="dni"&&r.dni===n.raw)||(n.type==="persona"&&r.nombre===n.raw)||(n.type==="operadora"&&r.operadora===n.raw));
+  document.getElementById("nodeDetail").innerHTML=`<div class="detail"><h3>${esc(n.label)}</h3><p><b>Tipo:</b> ${esc(n.type.toUpperCase())}</p><p><b>Eventos asociados:</b> ${rel.length}</p></div><div class="detail"><h3>Vínculos directos</h3>${rel.slice(0,10).map(r=>`<p>${tag(r.numero||"N/S","num")} ${tag(r.imei||"N/S","imei")} ${tag(r.dni||"N/S","dni")}<br>${esc(r.fecha_hora)} · ${esc(r.operadora)}</p>`).join("")||"<p>Sin vínculos.</p>"}</div>`;
+}
+function renderInterpretation(records,query){
+  const el=document.getElementById("interpretation");
+  if(!records.length){el.innerHTML=`<div class="empty">Sin datos para interpretar.</div>`;return}
+  const nums=new Set(records.map(r=>r.numero).filter(Boolean)),imeis=new Set(records.map(r=>r.imei).filter(Boolean)),dnis=new Set(records.map(r=>r.dni).filter(Boolean)),ops=new Set(records.map(r=>r.operadora).filter(Boolean));
+  const topI=[...imeis].map(imei=>({imei,c:records.filter(r=>r.imei===imei).length,n:new Set(records.filter(r=>r.imei===imei).map(r=>r.numero)).size})).sort((a,b)=>b.c-a.c);
+  const topD=[...dnis].map(dni=>({dni,c:records.filter(r=>r.dni===dni).length,n:new Set(records.filter(r=>r.dni===dni).map(r=>r.numero)).size})).sort((a,b)=>b.c-a.c);
+  const nivel=topI.some(x=>x.n>=5)?"ALTO":topI.some(x=>x.n>=2)?"MEDIO":"BAJO";
+  el.innerHTML=`<div class="detail"><h3>Resumen ${query?"del objetivo: "+esc(query):"de la base local"}</h3><p>La consulta contiene <b>${records.length}</b> eventos, <b>${nums.size}</b> números, <b>${imeis.size}</b> IMEI, <b>${dnis.size}</b> DNI y <b>${ops.size}</b> operadoras.</p><p>La expansión relacional por IMEI se valora preliminarmente como <b>${nivel}</b>.</p></div><div class="detail"><h3>IMEI de mayor interés</h3>${topI.slice(0,5).map(x=>`<p>${tag(x.imei,"imei")} · ${x.c} eventos · ${x.n} números</p>`).join("")||"<p>Sin IMEI.</p>"}</div><div class="detail"><h3>DNI frecuentes</h3>${topD.slice(0,5).map(x=>`<p>${tag(x.dni,"dni")} · ${x.c} eventos · ${x.n} números</p>`).join("")||"<p>Sin DNI.</p>"}</div><div class="detail"><h3>Acciones sugeridas</h3><p>Solicitar titularidad histórica, portabilidad, contrato, validación, IMSI, ICCID, CDR y celdas. Exportar matriz i2 para ampliar la red.</p></div>`;
+}
+function renderReport(records,query){
+  const nums=[...new Set(records.map(r=>r.numero).filter(Boolean))],imeis=[...new Set(records.map(r=>r.imei).filter(Boolean))],dnis=[...new Set(records.map(r=>r.dni).filter(Boolean))],ops=[...new Set(records.map(r=>r.operadora).filter(Boolean))];
+  const topI=imeis.map(imei=>({imei,c:records.filter(r=>r.imei===imei).length,n:new Set(records.filter(r=>r.imei===imei).map(r=>r.numero)).size})).sort((a,b)=>b.c-a.c).slice(0,8);
+  const txt=`ÁREA DE ANÁLISIS DE INTELIGENCIA
+DIVINCRI LA LIBERTAD
+CLASIFICACIÓN: RESERVADO
+Fecha de generación: ${new Date().toLocaleString("es-PE")}
+Objetivo consultado: ${query||"RED COMPLETA / BASE LOCAL"}
+
+I. RESUMEN EJECUTIVO
+Se registran ${records.length} eventos de vinculación. La red analizada presenta ${nums.length} número(s), ${imeis.length} IMEI, ${dnis.length} DNI y ${ops.length} operadora(s).
+
+II. INDICADORES PRINCIPALES
+- Números identificados: ${nums.join(", ")||"N/S"}
+- IMEI identificados: ${imeis.join(", ")||"N/S"}
+- DNI identificados: ${dnis.join(", ")||"N/S"}
+- Operadoras: ${ops.join(", ")||"N/S"}
+
+III. IMEI DE MAYOR RELEVANCIA
+${topI.map(x=>`- IMEI ${x.imei}: ${x.c} evento(s), ${x.n} número(s) relacionado(s).`).join("\n")||"- No se registran IMEI."}
+
+IV. LECTURA ANALÍTICA
+La compartición de IMEI puede representar cambio de SIM, uso de múltiples líneas en un equipo, circulación de terminal, préstamo, reventa o supuesto de duplicidad/clonación que debe descartarse. La titularidad administrativa no acredita por sí sola autoría material.
+
+V. ACCIONES INMEDIATAS
+1. Solicitar titularidad histórica, contrato, validación, portabilidad y reposiciones SIM.
+2. Requerir IMSI, ICCID, CDR y celdas.
+3. Validar identidad y vigencia documental.
+4. Exportar matriz relacional para IBM i2.
+
+VI. NOTA DE CAUTELA
+El presente reporte es de orientación analítica y debe corroborarse con fuente oficial antes de uso procesal.`;
+  document.getElementById("report").textContent=txt;
+}
+function renderAll(records,query){renderTable(records);renderTimeline(records);renderGraph(records,query);renderInterpretation(records,query);renderReport(records,query)}
+function download(name,content,type="text/plain;charset=utf-8"){
+  const blob=new Blob([content],{type});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),300);
+}
+function exportCSV(){
+  const h=["imei","numero","fecha_hora","operadora","dni","nombre","tipo"];
+  download("divincri_inteligencia_base.csv",h.join(",")+"\n"+DB.map(r=>h.map(k=>`"${(r[k]||"").toString().replace(/"/g,'""')}"`).join(",")).join("\n"),"text/csv;charset=utf-8");
+}
+function exportJSON(){download("divincri_inteligencia_base.json",JSON.stringify(DB,null,2),"application/json;charset=utf-8")}
+function exportI2(){
+  const rows=[["origen","tipo_relacion","destino","fecha_hora","operadora","dni","nombre"]];
+  DB.forEach(r=>{
+    if(r.numero&&r.imei)rows.push([r.numero,"USA_IMEI",r.imei,r.fecha_hora,r.operadora,r.dni,r.nombre]);
+    if(r.numero&&r.dni)rows.push([r.numero,"ABONADO_DNI",r.dni,r.fecha_hora,r.operadora,r.dni,r.nombre]);
+    if(r.dni&&r.nombre)rows.push([r.dni,"IDENTIFICA_A",r.nombre,r.fecha_hora,r.operadora,r.dni,r.nombre]);
+    if(r.numero&&r.operadora)rows.push([r.numero,"OPERADORA",r.operadora,r.fecha_hora,r.operadora,r.dni,r.nombre]);
+  });
+  download("matriz_i2_divincri_inteligencia.csv",rows.map(row=>row.map(v=>`"${(v||"").toString().replace(/"/g,'""')}"`).join(",")).join("\n"),"text/csv;charset=utf-8");
+}
+function copyReport(){navigator.clipboard.writeText(document.getElementById("report").textContent).then(()=>toast("Informe copiado."))}
+function downloadReport(){download("informe_divincri_inteligencia.txt",document.getElementById("report").textContent)}
+document.getElementById("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter")runSearch()});
+window.addEventListener("resize",()=>renderGraph(CURRENT,CURRENT_QUERY));
+loadDB();
+</script>
+</body>
+</html>
