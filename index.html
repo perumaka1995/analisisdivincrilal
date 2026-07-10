@@ -864,6 +864,205 @@
       font-size:11px;
     }
 
+
+
+    /* ============================================================
+       CENTRO DE CONTROL DEL GRAFO - VISTA CLARA Y PRIORIZADA
+       ============================================================ */
+    .graph-control-deck{
+      padding:12px;
+      border-bottom:1px solid var(--border);
+      background:linear-gradient(180deg,#fbfdfc,#f3f7f4);
+    }
+    .graph-control-row{
+      display:grid;
+      grid-template-columns:minmax(390px,1.35fr) minmax(250px,.85fr) auto;
+      gap:10px;
+      align-items:end;
+    }
+    .graph-control-block{min-width:0}
+    .graph-control-label{
+      display:block;
+      margin:0 0 6px;
+      color:#66766d;
+      font-size:8px;
+      font-weight:950;
+      letter-spacing:.8px;
+      text-transform:uppercase;
+    }
+    .graph-segmented{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:4px;
+      padding:4px;
+      border:1px solid #d5e1d9;
+      border-radius:14px;
+      background:#eaf0ec;
+    }
+    .graph-segmented button{
+      min-height:35px;
+      padding:0 9px;
+      border:0;
+      border-radius:10px;
+      color:#516158;
+      background:transparent;
+      box-shadow:none;
+      font-size:9px;
+      white-space:nowrap;
+    }
+    .graph-segmented button:hover{background:rgba(255,255,255,.75);color:var(--pnp-800);transform:none}
+    .graph-segmented button.active{
+      color:#fff;
+      background:linear-gradient(180deg,var(--pnp-600),var(--pnp-800));
+      box-shadow:0 6px 15px rgba(5,43,27,.18);
+    }
+    .graph-segmented button svg{width:14px;height:14px}
+    .graph-node-search{
+      min-height:44px;
+      display:flex;
+      align-items:center;
+      gap:7px;
+      padding:5px 6px 5px 12px;
+      border:1px solid #d3dfd7;
+      border-radius:14px;
+      background:#fff;
+      box-shadow:0 4px 14px rgba(3,29,18,.045);
+    }
+    .graph-node-search svg{width:16px;height:16px;color:#6f7f76;flex:0 0 auto}
+    .graph-node-search input{
+      min-width:0;
+      padding:0;
+      border:0;
+      border-radius:0;
+      box-shadow:none!important;
+      background:transparent;
+      font-size:10px;
+    }
+    .graph-node-search button{min-height:32px;padding:0 11px;border-radius:9px;font-size:9px;box-shadow:none}
+    .graph-view-tools{display:flex;gap:6px;justify-content:flex-end}
+    .graph-view-tools button{
+      min-height:44px;
+      padding:0 11px;
+      color:#385046;
+      background:#fff;
+      border-color:#d3dfd7;
+      box-shadow:0 4px 14px rgba(3,29,18,.045);
+      font-size:9px;
+    }
+    .graph-view-tools button.active{
+      color:#fff;
+      border-color:var(--pnp-700);
+      background:linear-gradient(180deg,var(--pnp-600),var(--pnp-800));
+    }
+    .graph-filter-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:10px;
+      padding-top:10px;
+      border-top:1px dashed #d5e1d9;
+    }
+    .graph-type-filters{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .graph-type-chip{
+      min-height:30px;
+      padding:0 9px;
+      color:#64736b;
+      background:#fff;
+      border-color:#d5e1d9;
+      border-radius:999px;
+      box-shadow:none;
+      font-size:8px;
+      letter-spacing:.15px;
+    }
+    .graph-type-chip:hover{transform:none;background:#f9fbfa}
+    .graph-type-chip .type-mark{
+      width:8px;height:8px;border-radius:50%;
+      background:var(--chip-color);
+      box-shadow:0 0 0 3px color-mix(in srgb,var(--chip-color) 15%,transparent);
+    }
+    .graph-type-chip:not(.active){opacity:.48;filter:grayscale(.75)}
+    .graph-type-chip.active{color:#273b31;border-color:color-mix(in srgb,var(--chip-color) 35%,#d5e1d9);background:#fff}
+    .graph-visible-summary{color:#718077;font-size:9px;font-weight:800;white-space:nowrap}
+    .graph-selection-bar{
+      display:none;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-top:10px;
+      padding:9px 10px 9px 12px;
+      border:1px solid #cfe0d5;
+      border-radius:13px;
+      background:linear-gradient(90deg,#eef7f1,#fff);
+    }
+    .graph-selection-bar.show{display:flex}
+    .graph-selection-copy{min-width:0;color:#56675d;font-size:9px;line-height:1.35}
+    .graph-selection-copy b{color:var(--pnp-800)}
+    .graph-selection-actions{display:flex;gap:6px;flex:0 0 auto}
+    .graph-selection-actions button{min-height:30px;padding:0 9px;font-size:8px;box-shadow:none}
+    .graph-selection-actions button.light{background:#fff}
+
+    #graphWrap{
+      height:760px;
+      background:
+        radial-gradient(circle at 50% 50%,rgba(19,128,79,.085),transparent 31%),
+        radial-gradient(circle at 50% 50%,transparent 0 205px,rgba(19,128,79,.055) 206px 207px,transparent 208px),
+        radial-gradient(circle at 50% 50%,transparent 0 395px,rgba(213,166,50,.045) 396px 397px,transparent 398px),
+        linear-gradient(rgba(7,61,37,.025) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(7,61,37,.025) 1px,transparent 1px),
+        #f8fbf9;
+      background-size:auto,auto,auto,36px 36px,36px 36px;
+    }
+    .graph-help{max-width:440px}
+    .graph-tooltip{width:270px}
+    .legend{align-items:center}
+    .legend span{border:0;background:transparent;padding:0 6px;min-height:25px}
+    .legend-icon{
+      width:19px;height:19px;
+      border-radius:50%;
+      background:transparent!important;
+      border:1.5px solid currentColor;
+    }
+    .legend-icon svg{width:12px;height:12px}
+    .legend .objective{color:#b4232f}
+    .legend .numero{color:#2563a9}
+    .legend .imei{color:#0f7a49}
+    .legend .dni{color:#b96a08}
+    .legend .persona{color:#7650b8}
+    .legend .operadora{color:#2d7885}
+    .legend-divider{width:1px;height:20px;padding:0!important;margin:0 3px;background:#dbe5de}
+    .legend-line{width:25px;height:0;border-top:2px solid var(--line-color);display:inline-block}
+    .legend-line.dashed{border-top-style:dashed}
+    .legend-line.dotted{border-top-style:dotted}
+    .graph-node{transition:opacity .16s ease}
+    .graph-node .node-card{transition:stroke-width .16s ease,filter .16s ease}
+    .graph-node.selected .node-card{stroke-width:2.8!important;filter:url(#selectedGlow)!important}
+    .graph-node .node-type-dot{filter:drop-shadow(0 2px 4px rgba(3,29,18,.14))}
+    .graph-node .free-icon{filter:drop-shadow(0 2px 3px rgba(3,29,18,.12))}
+    .graph-node:hover .node-card{stroke-width:2.2!important}
+
+    @media(max-width:1120px){
+      .graph-control-row{grid-template-columns:1fr 1fr}
+      .graph-view-tools{grid-column:1/-1;justify-content:flex-start}
+    }
+    @media(max-width:760px){
+      .graph-control-row{grid-template-columns:1fr}
+      .graph-view-tools{grid-column:auto;justify-content:flex-start;flex-wrap:wrap}
+      .graph-segmented{grid-template-columns:repeat(2,1fr)}
+      .graph-filter-row{align-items:flex-start;flex-direction:column}
+      .graph-visible-summary{white-space:normal}
+      .graph-selection-bar{align-items:flex-start;flex-direction:column}
+      .graph-selection-actions{flex-wrap:wrap}
+      #graphWrap{height:620px}
+    }
+    @media(max-width:520px){
+      .graph-control-deck{padding:9px}
+      .graph-view-tools button{min-height:38px}
+      .graph-node-search{min-height:40px}
+      .graph-selection-actions button span{display:inline}
+      #graphWrap{height:560px}
+    }
+
     @media(max-width:1260px){
       .hero-inner{grid-template-columns:auto 1fr}
       .hero-console{display:none}
@@ -1096,7 +1295,7 @@
           <div class="graph-toolbar">
             <div class="graph-toolbar-note">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v18M3 12h18"/><path d="m8 7 4-4 4 4M8 17l4 4 4-4M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg>
-              Arrastra nodos, usa la rueda para ampliar y haz clic para ver el detalle.
+              Arrastra los nodos. Un clic muestra el detalle y un doble clic aísla sus vínculos.
             </div>
             <div class="graph-toolbar-actions">
               <button class="light" type="button" onclick="zoomGraph(1)" title="Acercar">
@@ -1119,17 +1318,81 @@
               </button>
             </div>
           </div>
+
+          <div class="graph-control-deck">
+            <div class="graph-control-row">
+              <div class="graph-control-block">
+                <span class="graph-control-label">Qué información deseas ver</span>
+                <div class="graph-segmented" id="graphModeButtons">
+                  <button type="button" data-graph-mode="principal" class="active" onclick="setGraphViewMode('principal')" title="Objetivo y relaciones más relevantes">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 2.2 4.7 5.1.7-3.7 3.6.9 5.1-4.5-2.4-4.5 2.4.9-5.1-3.7-3.6 5.1-.7z"/></svg>Principal
+                  </button>
+                  <button type="button" data-graph-mode="connected" onclick="setGraphViewMode('connected')" title="Entidades que concentran más relaciones">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><path d="m6.5 10.5 4-4M13.5 6.5l4 4M17.5 13.5l-4 4M10.5 17.5l-4-4"/></svg>Más vinculados
+                  </button>
+                  <button type="button" data-graph-mode="direct" onclick="setGraphViewMode('direct')" title="Solo el nodo central y sus vínculos inmediatos">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9.5 14.5 14.5 9.5"/><path d="M7.2 16.8 5 19a3.5 3.5 0 0 1-5-5l3.2-3.2a3.5 3.5 0 0 1 5 0" transform="translate(4 -4)"/><path d="m16.8 7.2 2.2-2.2a3.5 3.5 0 0 1 5 5l-3.2 3.2a3.5 3.5 0 0 1-5 0" transform="translate(-4 4)"/></svg>Directos
+                  </button>
+                  <button type="button" data-graph-mode="all" onclick="setGraphViewMode('all')" title="Toda la red disponible">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><circle cx="12" cy="12" r="2"/><path d="m6.5 6.5 4 4M17.5 6.5l-4 4M6.5 17.5l4-4M17.5 17.5l-4-4"/></svg>Todo
+                  </button>
+                </div>
+              </div>
+
+              <div class="graph-control-block">
+                <span class="graph-control-label">Encontrar y enfocar una entidad</span>
+                <div class="graph-node-search">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+                  <input id="graphNodeSearch" type="search" placeholder="Número, IMEI, DNI o nombre" autocomplete="off">
+                  <button type="button" onclick="findGraphNode()">Buscar</button>
+                </div>
+              </div>
+
+              <div class="graph-view-tools">
+                <button class="light active" id="graphLayoutToggle" type="button" onclick="toggleGraphLayout()" title="Cambiar entre mapa central y orden por columnas">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="3.5" r="1.7"/><circle cx="20.5" cy="12" r="1.7"/><circle cx="12" cy="20.5" r="1.7"/><circle cx="3.5" cy="12" r="1.7"/><path d="M12 8.7V5.2M15.3 12h3.5M12 15.3v3.5M8.7 12H5.2"/></svg><span>Diseño central</span>
+                </button>
+                <button class="light" id="graphLabelsToggle" type="button" onclick="toggleGraphLabels()" title="Mostrar u ocultar el texto sobre las líneas">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h10M4 18h7"/></svg><span>Etiquetas</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="graph-filter-row">
+              <div class="graph-type-filters" aria-label="Tipos de entidad visibles">
+                <button class="graph-type-chip active" data-graph-type="numero" style="--chip-color:#2563a9" onclick="toggleGraphType('numero')"><i class="type-mark"></i>Números</button>
+                <button class="graph-type-chip active" data-graph-type="imei" style="--chip-color:#0f7a49" onclick="toggleGraphType('imei')"><i class="type-mark"></i>IMEI</button>
+                <button class="graph-type-chip active" data-graph-type="dni" style="--chip-color:#b96a08" onclick="toggleGraphType('dni')"><i class="type-mark"></i>DNI</button>
+                <button class="graph-type-chip active" data-graph-type="persona" style="--chip-color:#7650b8" onclick="toggleGraphType('persona')"><i class="type-mark"></i>Personas</button>
+                <button class="graph-type-chip active" data-graph-type="operadora" style="--chip-color:#2d7885" onclick="toggleGraphType('operadora')"><i class="type-mark"></i>Operadoras</button>
+              </div>
+              <div class="graph-visible-summary" id="graphVisibleSummary">Preparando visualización…</div>
+            </div>
+
+            <div class="graph-selection-bar" id="graphSelectionBar">
+              <div class="graph-selection-copy" id="graphSelectionCopy"></div>
+              <div class="graph-selection-actions">
+                <button type="button" onclick="focusSelectedGraphNode()"><span>Ver solo sus vínculos</span></button>
+                <button class="light" type="button" onclick="clearGraphSelection()"><span>Quitar selección</span></button>
+                <button class="light" type="button" onclick="clearGraphFocus()"><span>Volver al objetivo</span></button>
+              </div>
+            </div>
+          </div>
           <div id="graphWrap">
             <svg id="graph" role="img" aria-label="Grafo relacional de inteligencia"></svg>
             <div class="graph-tooltip" id="graphTooltip"></div>
           </div>
           <div class="legend">
             <span><i class="legend-icon objective"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></i> Objetivo</span>
-            <span><i class="legend-icon numero"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2.5" width="10" height="19" rx="2"/></svg></i> Número</span>
-            <span><i class="legend-icon imei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 9h6v6H9z"/></svg></i> IMEI</span>
-            <span><i class="legend-icon dni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8" cy="11" r="2"/></svg></i> DNI</span>
+            <span><i class="legend-icon numero"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2.5" width="10" height="19" rx="4"/></svg></i> Número</span>
+            <span><i class="legend-icon imei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 3 10 0 4 4v10l-4 4H7l-4-4V7z"/><path d="M9 9h6v6H9z"/></svg></i> IMEI</span>
+            <span><i class="legend-icon dni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6a2 2 0 0 1 2-2h12l4 4v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="8" cy="11" r="2"/></svg></i> DNI</span>
             <span><i class="legend-icon persona"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3"/><path d="M5 21c1-5 13-5 14 0"/></svg></i> Persona</span>
             <span><i class="legend-icon operadora"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V8M8 20h8M9.5 8 12 4l2.5 4z"/></svg></i> Operadora</span>
+            <i class="legend-divider" aria-hidden="true"></i>
+            <span><i class="legend-line" style="--line-color:#1f6a45"></i> IMEI compartido</span>
+            <span><i class="legend-line dashed" style="--line-color:#b07a17"></i> Abonado / DNI</span>
+            <span><i class="legend-line dotted" style="--line-color:#7650b8"></i> Identidad</span>
           </div>
         </div>
 
@@ -2161,18 +2424,26 @@ async function generateIntelligencePDF(){
 
 
 /* ============================================================
-   GRAFO PROFESIONAL INTERACTIVO - SVG NATIVO
+   GRAFO RELACIONAL PROFESIONAL - PRIORIZACIÓN, FILTROS Y FOCO
    ============================================================ */
-let graphState = {
-  svg:null, root:null, wrap:null, W:1200, H:700,
-  nodes:[], edges:[], nodeById:new Map(),
-  nodeEls:new Map(), edgeEls:new Map(), labelEls:new Map(),
-  transform:{x:0,y:0,k:1},
-  dragNode:null, dragMoved:false, pan:null,
-  records:[], query:"", center:null
+const GRAPH_TYPES=["numero","imei","dni","persona","operadora"];
+let graphState={
+  svg:null,root:null,wrap:null,W:1320,H:760,
+  nodes:[],edges:[],nodeById:new Map(),
+  nodeEls:new Map(),edgeEls:new Map(),labelEls:new Map(),
+  transform:{x:0,y:0,k:1},dragNode:null,dragMoved:false,pan:null,
+  records:[],query:"",center:null,fullNet:null,visibleNet:null,
+  options:{
+    mode:"principal",
+    layout:"radial",
+    showLabels:false,
+    types:new Set(GRAPH_TYPES),
+    selectedId:null,
+    focusId:null
+  }
 };
 
-const GRAPH_THEME = {
+const GRAPH_THEME={
   numero:{color:"#2563a9",soft:"#eaf3ff",label:"NÚMERO"},
   imei:{color:"#0f7a49",soft:"#e7f6ed",label:"IMEI"},
   dni:{color:"#b96a08",soft:"#fff3da",label:"DOCUMENTO"},
@@ -2183,55 +2454,45 @@ const GRAPH_THEME = {
 
 function graphOperatorShort(value){
   const v=norm(value);
-  if(v.includes("VIETTEL")) return "BITEL / VIETTEL";
-  if(v.includes("TELEFONICA")) return "MOVISTAR";
-  if(v.includes("AMERICA MOVIL")) return "CLARO";
-  if(v.includes("ENTEL")) return "ENTEL";
+  if(v.includes("VIETTEL"))return "BITEL / VIETTEL";
+  if(v.includes("TELEFONICA"))return "MOVISTAR";
+  if(v.includes("AMERICA MOVIL"))return "CLARO";
+  if(v.includes("ENTEL"))return "ENTEL";
   return (value||"OPERADORA").toString().trim();
 }
 function graphTypeLabel(type){return (GRAPH_THEME[type]||{label:type}).label}
-function graphNodeLabel(type, raw, label){
-  if(type==="dni") return "DNI "+raw;
-  if(type==="operadora") return graphOperatorShort(label||raw);
+function graphNodeLabel(type,raw,label){
+  if(type==="dni")return "DNI "+raw;
+  if(type==="operadora")return graphOperatorShort(label||raw);
   return label||raw;
 }
 function graphTargetMatch(raw,label,query){
   if(!query)return false;
-  const qd=onlyDigits(query), qn=norm(query);
-  if(qd && onlyDigits(raw)===qd)return true;
-  if(qd && onlyDigits(raw).includes(qd))return true;
-  return !!qn && norm(label||raw).includes(qn);
+  const qd=onlyDigits(query),qn=norm(query);
+  if(qd&&onlyDigits(raw)===qd)return true;
+  if(qd&&onlyDigits(raw).includes(qd))return true;
+  return !!qn&&norm(label||raw).includes(qn);
 }
 function buildNetwork(records,query){
-  const nodes=new Map(), edges=new Map();
+  const nodes=new Map(),edges=new Map();
   function add(raw,type,label){
     const cleanRaw=(raw||"").toString().trim();
     if(!cleanRaw)return null;
     const stableRaw=type==="operadora"?norm(cleanRaw):cleanRaw;
     const id=type+":"+stableRaw;
     if(!nodes.has(id)){
-      nodes.set(id,{
-        id,
-        raw:cleanRaw,
-        type,
-        label:graphNodeLabel(type,cleanRaw,label||cleanRaw),
-        target:graphTargetMatch(cleanRaw,label||cleanRaw,query),
-        count:0,
-        degree:0,
-        x:0,y:0,w:0,h:0,
-        isCenter:false
-      });
+      nodes.set(id,{id,raw:cleanRaw,type,label:graphNodeLabel(type,cleanRaw,label||cleanRaw),target:graphTargetMatch(cleanRaw,label||cleanRaw,query),count:0,degree:0,fullDegree:0,x:0,y:0,w:0,h:0,isCenter:false,isObjective:false});
     }
     nodes.get(id).count++;
     return id;
   }
   function addEdge(source,target,relation){
     if(!source||!target||source===target)return;
-    const key=[source,target,relation].join("|");
-    if(!edges.has(key))edges.set(key,{id:key,source,target,relation,count:0});
+    const pair=[source,target].sort();
+    const key=pair[0]+"|"+pair[1]+"|"+relation;
+    if(!edges.has(key))edges.set(key,{id:key,source:pair[0],target:pair[1],relation,count:0});
     edges.get(key).count++;
   }
-
   records.forEach(r=>{
     const nNumero=add(r.numero,"numero",r.numero);
     const nImei=add(r.imei,"imei",r.imei);
@@ -2243,19 +2504,18 @@ function buildNetwork(records,query){
     addEdge(nDni,nPersona,"identidad");
     addEdge(nNumero,nOperadora,"servicio");
   });
-
-  const outNodes=[...nodes.values()];
-  const outEdges=[...edges.values()];
+  const outNodes=[...nodes.values()],outEdges=[...edges.values()];
   const byId=new Map(outNodes.map(n=>[n.id,n]));
   outEdges.forEach(e=>{
     if(byId.has(e.source))byId.get(e.source).degree++;
     if(byId.has(e.target))byId.get(e.target).degree++;
   });
+  outNodes.forEach(n=>n.fullDegree=n.degree);
   return {nodes:outNodes,edges:outEdges};
 }
 function chooseCenter(net,query){
   if(!net.nodes.length)return null;
-  const qd=onlyDigits(query), qn=norm(query);
+  const qd=onlyDigits(query),qn=norm(query);
   if(query){
     const exact=net.nodes.find(n=>(qd&&onlyDigits(n.raw)===qd)||norm(n.label)===qn);
     if(exact)return exact;
@@ -2264,59 +2524,14 @@ function chooseCenter(net,query){
   }
   return net.nodes.slice().sort((a,b)=>{
     const pref={imei:5,numero:4,dni:3,persona:2,operadora:1};
-    return b.degree-a.degree || b.count-a.count || (pref[b.type]||0)-(pref[a.type]||0);
+    return b.degree-a.degree||b.count-a.count||(pref[b.type]||0)-(pref[a.type]||0);
   })[0];
 }
-function graphCardWidth(d){
-  if(d.type==="persona")return 176;
-  if(d.type==="operadora")return 162;
-  if(d.type==="imei")return 158;
-  if(d.type==="dni")return 144;
-  return 140;
-}
-function graphSplitLabel(text,max=22){
-  const value=(text||"").toString().trim();
-  if(value.length<=max)return [value];
-  const words=value.split(/\s+/);
-  if(words.length===1)return [value.slice(0,max-1)+"…"];
-  let a="",b="";
-  words.forEach(w=>{
-    if((a+" "+w).trim().length<=max && !b)a=(a+" "+w).trim();
-    else if((b+" "+w).trim().length<=max)b=(b+" "+w).trim();
-  });
-  if(!b)b=value.slice(a.length).trim().slice(0,max-1)+"…";
-  if((a+" "+b).length<value.length-2)b=b.replace(/…?$/,"…");
-  return [a,b].filter(Boolean);
-}
-function graphIconMarkup(type,color){
-  if(type==="numero")return `<rect x="-7" y="-11" width="14" height="22" rx="2.8" fill="none" stroke="${color}" stroke-width="1.9"/><path d="M-3.5-7h7M-1.7 7.5h3.4" stroke="${color}" stroke-width="1.7" stroke-linecap="round"/>`;
-  if(type==="imei")return `<rect x="-8" y="-8" width="16" height="16" rx="2.5" fill="none" stroke="${color}" stroke-width="1.8"/><rect x="-4.5" y="-4.5" width="9" height="9" rx="1" fill="none" stroke="${color}" stroke-width="1.4"/><path d="M-11-4h3M-11 0h3M-11 4h3M8-4h3M8 0h3M8 4h3M-4-11v3M0-11v3M4-11v3M-4 8v3M0 8v3M4 8v3" stroke="${color}" stroke-width="1.2" stroke-linecap="round"/>`;
-  if(type==="dni")return `<rect x="-11" y="-8" width="22" height="16" rx="2.5" fill="none" stroke="${color}" stroke-width="1.7"/><circle cx="-5" cy="-1.5" r="2.4" fill="none" stroke="${color}" stroke-width="1.4"/><path d="M-8 4c.8-2.5 5.2-2.5 6 0M1-3h7M1 1h7M1 5h4" stroke="${color}" stroke-width="1.25" stroke-linecap="round"/>`;
-  if(type==="persona")return `<circle cx="0" cy="-4" r="4.2" fill="none" stroke="${color}" stroke-width="1.8"/><path d="M-8.5 9c1-6 16-6 17 0" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/>`;
-  return `<path d="M0 10V-3M-6 10H6M-3-3 0-9l3 6z" fill="none" stroke="${color}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M-6-1a8 8 0 0 1 0-8M6-1a8 8 0 0 0 0-8M-9 2a12 12 0 0 1 0-14M9 2a12 12 0 0 0 0-14" fill="none" stroke="${color}" stroke-width="1.25" stroke-linecap="round"/>`;
-}
-function graphRelationStyle(relation){
-  if(relation==="tecnico")return {color:"#1f6a45",dash:"",label:"Vinculación IMEI"};
-  if(relation==="administrativo")return {color:"#b07a17",dash:"7 5",label:"Abonado / DNI"};
-  if(relation==="identidad")return {color:"#7650b8",dash:"3 5",label:"Identifica"};
-  return {color:"#2d7885",dash:"10 6",label:"Operadora"};
-}
 function graphRecordsForView(records,query){
-  if(query||GRAPH_MODE==="search")return records.slice(0,72);
-  const ranked=[...new Set(records.map(r=>r.imei).filter(Boolean))]
-    .map(imei=>({imei,count:records.filter(r=>r.imei===imei).length}))
-    .sort((a,b)=>b.count-a.count)
-    .slice(0,3)
-    .map(x=>x.imei);
-  return records.filter(r=>!r.imei||ranked.includes(r.imei)).slice(0,36);
-}
-function updateGraphStatus(net,query){
-  const mode=document.getElementById("graphModeLabel");
-  const n=document.getElementById("graphNodeCount");
-  const e=document.getElementById("graphEdgeCount");
-  if(mode)mode.textContent=query?"Vista de objetivo":(net.nodes.length?"Red priorizada":"Sin datos");
-  if(n)n.textContent=`${net.nodes.length} nodo${net.nodes.length===1?"":"s"}`;
-  if(e)e.textContent=`${net.edges.length} vínculo${net.edges.length===1?"":"s"}`;
+  const max=query?420:500;
+  if(records.length<=max)return records.slice();
+  const scored=records.map((r,i)=>({r,i,score:(r.imei?4:0)+(r.dni?3:0)+(r.nombre?2:0)+(r.operadora?1:0)}));
+  return scored.sort((a,b)=>b.score-a.score||a.i-b.i).slice(0,max).map(x=>x.r);
 }
 function graphAdjacency(net){
   const map=new Map(net.nodes.map(n=>[n.id,[]]));
@@ -2326,125 +2541,143 @@ function graphAdjacency(net){
   });
   return map;
 }
-function graphFullSortKey(node,adj,nodeById){
-  const linked=(adj.get(node.id)||[]).map(x=>nodeById.get(x.id)).filter(Boolean);
-  if(node.type==="persona"){
-    const d=linked.find(x=>x.type==="dni");
-    return (d?.raw||"")+"|"+node.label;
-  }
-  if(node.type==="dni"){
-    const nums=linked.filter(x=>x.type==="numero").map(x=>x.raw).sort().join(",");
-    return nums+"|"+node.raw;
-  }
-  if(node.type==="numero"){
-    const imeis=linked.filter(x=>x.type==="imei").map(x=>x.raw).sort().join(",");
-    const dnis=linked.filter(x=>x.type==="dni").map(x=>x.raw).sort().join(",");
-    return imeis+"|"+dnis+"|"+node.raw;
-  }
-  if(node.type==="imei"){
-    return String(999-node.degree).padStart(3,"0")+"|"+node.raw;
-  }
-  return node.label;
-}
-function graphQueryColumns(centerType){
-  if(centerType==="numero")return {persona:150,dni:370,objective:610,imei:850,related:1090,operadora:610};
-  if(centerType==="imei")return {persona:140,dni:360,numero:610,objective:610,related:890,imei:610,operadora:610};
-  if(centerType==="dni")return {persona:150,objective:390,numero:660,imei:930,related:1120,operadora:660};
-  if(centerType==="persona")return {objective:170,dni:400,numero:670,imei:950,related:1130,operadora:670};
-  return {persona:140,dni:360,numero:610,imei:880,related:1100,objective:610,operadora:610};
-}
-function graphNodeColumn(node,center,query){
-  if(!query)return {persona:140,dni:360,numero:620,imei:880,operadora:1120}[node.type]||620;
-  const c=graphQueryColumns(center.type);
-  if(node.id===center.id)return c.objective;
-  if(center.type==="numero" && node.type==="numero")return c.related;
-  if(center.type==="imei" && node.type==="numero")return c.related;
-  if(center.type==="dni" && node.type==="dni")return c.objective;
-  if(center.type==="persona" && node.type==="persona")return c.objective;
-  return c[node.type] ?? c.numero ?? 620;
-}
-function graphLayout(net,center,query){
-  const nodeById=new Map(net.nodes.map(n=>[n.id,n]));
-  const adj=graphAdjacency(net);
-  net.nodes.forEach(n=>{
-    n.w=graphCardWidth(n)+(n.id===center.id?10:0);
-    n.h=n.id===center.id?68:62;
-    n.isCenter=n.id===center.id;
-    n.isObjective=!!query && n.id===center.id;
-    n.column=graphNodeColumn(n,center,query);
-  });
-
-  const columns=new Map();
-  net.nodes.forEach(n=>{
-    const key=Math.round(n.column);
-    if(!columns.has(key))columns.set(key,[]);
-    columns.get(key).push(n);
-  });
-  const maxCol=Math.max(1,...[...columns.values()].map(a=>a.length));
-  const H=Math.max(660,Math.min(1700,150+maxCol*88));
-  const W=1260;
-
-  if(query){
-    const distance=new Map([[center.id,0]]);
-    const parent=new Map();
-    const queue=[center.id];
-    while(queue.length){
-      const id=queue.shift();
-      const d=distance.get(id);
-      (adj.get(id)||[]).forEach(x=>{
-        if(!distance.has(x.id)){
-          distance.set(x.id,d+1);
-          parent.set(x.id,id);
-          queue.push(x.id);
-        }
-      });
-    }
-    const children=new Map(net.nodes.map(n=>[n.id,[]]));
-    parent.forEach((p,id)=>children.get(p)?.push(id));
-    net.nodes.forEach(n=>{n.desiredY=H/2});
-    center.desiredY=H/2;
-    const visit=(id)=>{
-      const kids=(children.get(id)||[]).map(k=>nodeById.get(k)).filter(Boolean);
-      kids.sort((a,b)=>{
-        const order={persona:0,dni:1,numero:2,imei:3,operadora:4};
-        return (order[a.type]??9)-(order[b.type]??9)||b.degree-a.degree||a.label.localeCompare(b.label);
-      });
-      const parentNode=nodeById.get(id);
-      kids.forEach((k,i)=>{
-        k.desiredY=(parentNode?.desiredY||H/2)+(i-(kids.length-1)/2)*96;
-        visit(k.id);
-      });
-    };
-    visit(center.id);
-    net.nodes.filter(n=>!distance.has(n.id)).forEach((n,i)=>n.desiredY=90+i*90);
-    net.nodes.filter(n=>n.type==="operadora" && !n.isCenter).forEach((n,i)=>n.desiredY=H-90-i*76);
-  }else{
-    net.nodes.forEach(n=>n.desiredY=H/2);
-    columns.forEach(arr=>{
-      arr.sort((a,b)=>graphFullSortKey(a,adj,nodeById).localeCompare(graphFullSortKey(b,adj,nodeById)));
-      arr.forEach((n,i)=>n.desiredY=70+i*((H-140)/Math.max(1,arr.length-1)));
+function graphDistances(net,rootId){
+  const adj=graphAdjacency(net),distance=new Map(),parent=new Map();
+  if(!rootId||!adj.has(rootId))return {adj,distance,parent};
+  distance.set(rootId,0);
+  const q=[rootId];
+  while(q.length){
+    const id=q.shift(),d=distance.get(id);
+    (adj.get(id)||[]).forEach(x=>{
+      if(!distance.has(x.id)){distance.set(x.id,d+1);parent.set(x.id,id);q.push(x.id)}
     });
   }
+  return {adj,distance,parent};
+}
+function graphAddPath(id,rootId,parent,set){
+  let cur=id,guard=0;
+  while(cur&&guard++<20){set.add(cur);if(cur===rootId)break;cur=parent.get(cur)}
+}
+function graphVisibleNetwork(fullNet,baseCenter){
+  const opts=graphState.options;
+  const fullById=new Map(fullNet.nodes.map(n=>[n.id,n]));
+  const root=fullById.get(opts.focusId)||baseCenter;
+  if(!root)return {nodes:[],edges:[],root:null,total:fullNet.nodes.length};
+  const {adj,distance,parent}=graphDistances(fullNet,root.id);
+  const typeAllowed=n=>opts.types.has(n.type)||n.id===root.id;
+  const eligible=fullNet.nodes.filter(typeAllowed);
+  const selected=new Set([root.id]);
+  const priority={numero:5,imei:4,dni:3,persona:2,operadora:1};
+  const rank=(a,b)=>{
+    const da=distance.has(a.id)?distance.get(a.id):99,db=distance.has(b.id)?distance.get(b.id):99;
+    return da-db||b.degree-a.degree||b.count-a.count||(priority[b.type]||0)-(priority[a.type]||0)||a.label.localeCompare(b.label);
+  };
 
-  columns.forEach(arr=>{
-    arr.sort((a,b)=>a.desiredY-b.desiredY||b.degree-a.degree||a.label.localeCompare(b.label));
-    const pinned=arr.findIndex(n=>n.isCenter);
-    const margin=54;
-    if(pinned>=0){
-      const before=arr.slice(0,pinned), after=arr.slice(pinned+1);
-      arr[pinned].y=H/2;
-      before.forEach((n,i)=>n.y=margin+(H/2-margin-78)*(i+1)/(before.length+1));
-      after.forEach((n,i)=>n.y=H/2+78+(H-margin-(H/2+78))*(i+1)/(after.length+1));
-    }else{
-      if(arr.length===1)arr[0].y=Math.max(margin,Math.min(H-margin,arr[0].desiredY));
-      else arr.forEach((n,i)=>n.y=margin+(H-2*margin)*i/(arr.length-1));
-    }
-    arr.forEach(n=>{n.x=n.column});
+  if(opts.mode==="direct"){
+    eligible.filter(n=>(distance.get(n.id)??99)<=1).forEach(n=>selected.add(n.id));
+  }else if(opts.mode==="principal"){
+    const candidates=eligible.filter(n=>(distance.get(n.id)??99)<=2).sort(rank).slice(0,24);
+    candidates.forEach(n=>graphAddPath(n.id,root.id,parent,selected));
+  }else if(opts.mode==="connected"){
+    const candidates=eligible.filter(n=>n.id===root.id||n.degree>=2).sort((a,b)=>b.degree-a.degree||b.count-a.count||rank(a,b)).slice(0,38);
+    candidates.forEach(n=>graphAddPath(n.id,root.id,parent,selected));
+  }else{
+    eligible.sort((a,b)=>b.degree-a.degree||b.count-a.count||a.label.localeCompare(b.label)).slice(0,110).forEach(n=>selected.add(n.id));
+  }
+
+  let nodes=eligible.filter(n=>selected.has(n.id)).map(n=>({...n}));
+  let ids=new Set(nodes.map(n=>n.id));
+  let edges=fullNet.edges.filter(e=>ids.has(e.source)&&ids.has(e.target)).map(e=>({...e}));
+
+  const visibleDegree=new Map(nodes.map(n=>[n.id,0]));
+  edges.forEach(e=>{visibleDegree.set(e.source,(visibleDegree.get(e.source)||0)+1);visibleDegree.set(e.target,(visibleDegree.get(e.target)||0)+1)});
+  nodes=nodes.filter(n=>n.id===root.id||(visibleDegree.get(n.id)||0)>0);
+  ids=new Set(nodes.map(n=>n.id));
+  edges=edges.filter(e=>ids.has(e.source)&&ids.has(e.target));
+  nodes.forEach(n=>{n.degree=visibleDegree.get(n.id)||0;n.fullDegree=fullById.get(n.id)?.fullDegree||n.degree});
+
+  const rootCopy=nodes.find(n=>n.id===root.id)||nodes[0]||null;
+  return {nodes,edges,root:rootCopy,total:fullNet.nodes.length,totalEdges:fullNet.edges.length};
+}
+function graphCardWidth(d){
+  if(d.type==="persona")return 194;
+  if(d.type==="operadora")return 174;
+  if(d.type==="imei")return 176;
+  if(d.type==="dni")return 164;
+  return 158;
+}
+function graphSplitLabel(text,max=22){
+  const value=(text||"").toString().trim();
+  if(value.length<=max)return [value];
+  const words=value.split(/\s+/);
+  if(words.length===1)return [value.slice(0,max-1)+"…"];
+  let a="",b="";
+  words.forEach(w=>{
+    if((a+" "+w).trim().length<=max&&!b)a=(a+" "+w).trim();
+    else if((b+" "+w).trim().length<=max)b=(b+" "+w).trim();
   });
-
-  center.x=graphNodeColumn(center,center,query);
-  center.y=H/2;
-  return {W,H,nodeById,adj};
+  if(!b)b=value.slice(a.length).trim().slice(0,max-1)+"…";
+  if((a+" "+b).length<value.length-2)b=b.replace(/…?$/,"…");
+  return [a,b].filter(Boolean);
+}
+function graphIconMarkup(type,color){
+  if(type==="numero")return `<rect x="-7" y="-12" width="14" height="24" rx="5" fill="none" stroke="${color}" stroke-width="2"/><path d="M-3.5-8h7M-1.8 8.5h3.6" stroke="${color}" stroke-width="1.7" stroke-linecap="round"/>`;
+  if(type==="imei")return `<path d="m-8-10 16 0 4 4v12l-4 4H-8l-4-4V-6z" fill="none" stroke="${color}" stroke-width="1.8"/><rect x="-4.5" y="-4.5" width="9" height="9" rx="1" fill="none" stroke="${color}" stroke-width="1.4"/><path d="M-12-3h-3M-12 3h-3M12-3h3M12 3h3M-3-10v-3M3-10v-3M-3 10v3M3 10v3" stroke="${color}" stroke-width="1.2" stroke-linecap="round"/>`;
+  if(type==="dni")return `<path d="M-11-8h15l7 7v9h-22z" fill="none" stroke="${color}" stroke-width="1.7" stroke-linejoin="round"/><circle cx="-5" cy="-1.5" r="2.4" fill="none" stroke="${color}" stroke-width="1.4"/><path d="M-8 4c.8-2.5 5.2-2.5 6 0M1 1h6M1 5h6" stroke="${color}" stroke-width="1.25" stroke-linecap="round"/>`;
+  if(type==="persona")return `<circle cx="0" cy="-5" r="4.5" fill="none" stroke="${color}" stroke-width="1.9"/><path d="M-9 10c1-6.7 17-6.7 18 0" fill="none" stroke="${color}" stroke-width="1.9" stroke-linecap="round"/>`;
+  return `<path d="M0 11V-3M-6 11H6M-3-3 0-10l3 7z" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M-6-1a8 8 0 0 1 0-8M6-1a8 8 0 0 0 0-8M-9 2a12 12 0 0 1 0-14M9 2a12 12 0 0 0 0-14" fill="none" stroke="${color}" stroke-width="1.25" stroke-linecap="round"/>`;
+}
+function graphRelationStyle(relation){
+  if(relation==="tecnico")return {color:"#1f6a45",dash:"",label:"IMEI compartido"};
+  if(relation==="administrativo")return {color:"#b07a17",dash:"7 5",label:"Abonado / DNI"};
+  if(relation==="identidad")return {color:"#7650b8",dash:"3 5",label:"Identidad"};
+  return {color:"#2d7885",dash:"10 6",label:"Operadora"};
+}
+function graphTypeAngle(type){return {persona:Math.PI,dni:Math.PI*.72,numero:0,imei:-Math.PI*.34,operadora:Math.PI*.36}[type]??0}
+function graphLayoutRadial(net,center){
+  const nodeById=new Map(net.nodes.map(n=>[n.id,n]));
+  const {distance}=graphDistances(net,center.id);
+  const W=1360,H=Math.max(760,net.nodes.length>28?900:780),cx=W/2,cy=H/2;
+  center.w=graphCardWidth(center)+18;center.h=74;center.x=cx;center.y=cy;center.isCenter=true;
+  const groups=new Map();
+  net.nodes.filter(n=>n.id!==center.id).forEach(n=>{
+    n.w=graphCardWidth(n);n.h=66;n.isCenter=false;
+    const d=Math.min(3,distance.get(n.id)||2),key=n.type+"|"+d;
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(n);
+  });
+  groups.forEach((arr,key)=>{
+    const [type,ds]=key.split("|"),d=Number(ds);
+    arr.sort((a,b)=>b.fullDegree-a.fullDegree||b.count-a.count||a.label.localeCompare(b.label));
+    const base=graphTypeAngle(type),spread=Math.min(1.18,.19*Math.max(1,arr.length-1));
+    arr.forEach((n,i)=>{
+      const lane=Math.floor(i/8),idx=i%8,count=Math.min(8,arr.length-lane*8);
+      const local=count===1?0:(idx-(count-1)/2)*(spread/Math.max(1,count-1));
+      const r=(d===1?225:d===2?405:535)+lane*82;
+      n.x=cx+Math.cos(base+local)*r;
+      n.y=cy+Math.sin(base+local)*r;
+      n.x=Math.max(n.w/2+25,Math.min(W-n.w/2-25,n.x));
+      n.y=Math.max(n.h/2+25,Math.min(H-n.h/2-25,n.y));
+    });
+  });
+  return {W,H,nodeById,adj:graphAdjacency(net)};
+}
+function graphLayoutColumns(net,center){
+  const order=["persona","dni","numero","imei","operadora"],xMap={persona:145,dni:395,numero:670,imei:945,operadora:1195};
+  const columns=new Map(order.map(t=>[t,[]]));
+  net.nodes.forEach(n=>{n.w=graphCardWidth(n)+(n.id===center.id?14:0);n.h=n.id===center.id?74:66;n.isCenter=n.id===center.id;(columns.get(n.type)||columns.get("numero")).push(n)});
+  const max=Math.max(1,...[...columns.values()].map(a=>a.length));
+  const H=Math.max(720,Math.min(1650,150+max*88)),W=1340;
+  columns.forEach((arr,type)=>{
+    arr.sort((a,b)=>(a.id===center.id?-1:b.id===center.id?1:b.fullDegree-a.fullDegree||a.label.localeCompare(b.label)));
+    arr.forEach((n,i)=>{n.x=xMap[type]||670;n.y=arr.length===1?H/2:65+(H-130)*i/(arr.length-1)});
+  });
+  if(center){center.x=xMap[center.type]||670;center.y=H/2}
+  return {W,H,nodeById:new Map(net.nodes.map(n=>[n.id,n])),adj:graphAdjacency(net)};
+}
+function graphLayout(net,center){
+  const useColumns=graphState.options.layout==="columns"||(graphState.options.mode==="all"&&net.nodes.length>42);
+  return useColumns?graphLayoutColumns(net,center):graphLayoutRadial(net,center);
 }
 function svgNode(tag,attrs={}){
   const el=document.createElementNS("http://www.w3.org/2000/svg",tag);
@@ -2454,11 +2687,9 @@ function svgNode(tag,attrs={}){
 function graphCurvePath(edge){
   const a=graphState.nodeById.get(edge.source),b=graphState.nodeById.get(edge.target);
   if(!a||!b)return "";
-  const sx=a.x,sy=a.y,tx=b.x,ty=b.y;
-  const dx=tx-sx,dy=ty-sy,dist=Math.sqrt(dx*dx+dy*dy)||1;
+  const sx=a.x,sy=a.y,tx=b.x,ty=b.y,dx=tx-sx,dy=ty-sy,dist=Math.sqrt(dx*dx+dy*dy)||1;
   const hash=[...edge.id].reduce((sum,c)=>sum+c.charCodeAt(0),0);
-  const bend=((hash%2)?1:-1)*Math.min(26,dist*.085);
-  const mx=(sx+tx)/2,my=(sy+ty)/2,nx=-dy/dist,ny=dx/dist;
+  const bend=((hash%2)?1:-1)*Math.min(34,dist*.075),mx=(sx+tx)/2,my=(sy+ty)/2,nx=-dy/dist,ny=dx/dist;
   return `M${sx},${sy} Q${mx+nx*bend},${my+ny*bend} ${tx},${ty}`;
 }
 function graphEdgeMid(edge){
@@ -2466,333 +2697,234 @@ function graphEdgeMid(edge){
   return a&&b?{x:(a.x+b.x)/2,y:(a.y+b.y)/2}:{x:0,y:0};
 }
 function graphApplyTransform(){
-  if(!graphState.root)return;
-  const t=graphState.transform;
-  graphState.root.setAttribute("transform",`translate(${t.x} ${t.y}) scale(${t.k})`);
+  if(graphState.root){const t=graphState.transform;graphState.root.setAttribute("transform",`translate(${t.x} ${t.y}) scale(${t.k})`)}
 }
 function graphSvgPoint(evt){
-  const svg=graphState.svg;
-  const pt=svg.createSVGPoint();
-  pt.x=evt.clientX;pt.y=evt.clientY;
-  const ctm=svg.getScreenCTM();
-  return ctm?pt.matrixTransform(ctm.inverse()):{x:0,y:0};
+  const pt=graphState.svg.createSVGPoint();pt.x=evt.clientX;pt.y=evt.clientY;
+  const ctm=graphState.svg.getScreenCTM();return ctm?pt.matrixTransform(ctm.inverse()):{x:0,y:0};
 }
 function graphUpdateGeometry(){
   graphState.edges.forEach(e=>{
-    const path=graphState.edgeEls.get(e.id);
-    if(path)path.setAttribute("d",graphCurvePath(e));
-    const label=graphState.labelEls.get(e.id);
-    if(label){
-      const m=graphEdgeMid(e);
-      label.setAttribute("transform",`translate(${m.x} ${m.y})`);
-    }
+    graphState.edgeEls.get(e.id)?.setAttribute("d",graphCurvePath(e));
+    const label=graphState.labelEls.get(e.id);if(label){const m=graphEdgeMid(e);label.setAttribute("transform",`translate(${m.x} ${m.y})`)}
   });
-  graphState.nodes.forEach(n=>{
-    const el=graphState.nodeEls.get(n.id);
-    if(el)el.setAttribute("transform",`translate(${n.x} ${n.y})`);
-  });
+  graphState.nodes.forEach(n=>graphState.nodeEls.get(n.id)?.setAttribute("transform",`translate(${n.x} ${n.y})`));
 }
 function graphShowTooltip(evt,node){
-  const tooltip=document.getElementById("graphTooltip");
-  const wrap=graphState.wrap;
-  if(!tooltip||!wrap)return;
-  tooltip.innerHTML=`<span class="tt-type">${esc(graphTypeLabel(node.type))}</span><b>${esc(node.label)}</b><span>${node.degree} vínculo(s) directos · ${node.count} aparición(es). Haz clic para revisar todos los eventos asociados.</span>`;
-  const rect=wrap.getBoundingClientRect();
-  const x=Math.min(rect.width-265,Math.max(12,evt.clientX-rect.left+14));
-  const y=Math.min(rect.height-112,Math.max(12,evt.clientY-rect.top+14));
-  tooltip.style.left=x+"px";tooltip.style.top=y+"px";
-  tooltip.classList.add("show");
+  const tooltip=document.getElementById("graphTooltip"),wrap=graphState.wrap;if(!tooltip||!wrap)return;
+  tooltip.innerHTML=`<span class="tt-type">${esc(graphTypeLabel(node.type))}</span><b>${esc(node.label)}</b><span>${node.fullDegree} vínculo(s) en la red · ${node.count} aparición(es). Clic para seleccionar; doble clic para ver únicamente sus relaciones.</span>`;
+  const rect=wrap.getBoundingClientRect(),x=Math.min(rect.width-285,Math.max(12,evt.clientX-rect.left+14)),y=Math.min(rect.height-126,Math.max(12,evt.clientY-rect.top+14));
+  tooltip.style.left=x+"px";tooltip.style.top=y+"px";tooltip.classList.add("show");
 }
-function graphHideTooltip(){
-  document.getElementById("graphTooltip")?.classList.remove("show");
-}
+function graphHideTooltip(){document.getElementById("graphTooltip")?.classList.remove("show")}
 function graphHighlight(nodeId,on){
-  const neighbors=new Set([nodeId]);
+  const active=on?nodeId:graphState.options.selectedId;
+  if(!active){
+    graphState.nodeEls.forEach(el=>el.setAttribute("opacity","1"));
+    graphState.edges.forEach(e=>{graphState.edgeEls.get(e.id)?.setAttribute("opacity",".52");graphState.labelEls.get(e.id)?.setAttribute("opacity",".94")});
+    return;
+  }
+  const neighbors=new Set([active]);
+  graphState.edges.forEach(e=>{if(e.source===active)neighbors.add(e.target);if(e.target===active)neighbors.add(e.source)});
+  graphState.nodeEls.forEach((el,id)=>el.setAttribute("opacity",neighbors.has(id)?"1":".14"));
   graphState.edges.forEach(e=>{
-    if(e.source===nodeId)neighbors.add(e.target);
-    if(e.target===nodeId)neighbors.add(e.source);
+    const linked=e.source===active||e.target===active,path=graphState.edgeEls.get(e.id),label=graphState.labelEls.get(e.id);
+    if(path){path.setAttribute("opacity",linked?".98":".055");path.setAttribute("stroke-width",linked?Math.min(5,2.2+Math.log2(e.count+1)):Math.min(4,1.4+Math.log2(e.count+1)*.65))}
+    if(label)label.setAttribute("opacity",linked?"1":".04");
   });
-  graphState.nodeEls.forEach((el,id)=>el.setAttribute("opacity",!on||neighbors.has(id)?"1":".18"));
-  graphState.edges.forEach(e=>{
-    const active=e.source===nodeId||e.target===nodeId;
-    const path=graphState.edgeEls.get(e.id);
-    if(path){
-      path.setAttribute("opacity",!on?".48":active?".94":".07");
-      path.setAttribute("stroke-width",active?Math.min(5,2+Math.log2(e.count+1)):Math.min(4,1.35+Math.log2(e.count+1)*.65));
-    }
-    const label=graphState.labelEls.get(e.id);
-    if(label)label.setAttribute("opacity",!on?".92":active?"1":".04");
-  });
+}
+function graphCardShape(node,theme){
+  const w=node.w,h=node.h,attrs={fill:node.isObjective?theme.soft:"#fff",stroke:theme.color,"stroke-width":node.isObjective?2.4:(node.isCenter?2:1.35),filter:"url(#nodeShadow)",class:"node-card"};
+  if(node.type==="imei"){
+    const cut=13,points=`${-w/2+cut},${-h/2} ${w/2-cut},${-h/2} ${w/2},${-h/2+cut} ${w/2},${h/2-cut} ${w/2-cut},${h/2} ${-w/2+cut},${h/2} ${-w/2},${h/2-cut} ${-w/2},${-h/2+cut}`;
+    return svgNode("polygon",{points,...attrs});
+  }
+  if(node.type==="dni"){
+    const notch=16,d=`M${-w/2+12},${-h/2} H${w/2-notch} L${w/2},${-h/2+notch} V${h/2-12} Q${w/2},${h/2} ${w/2-12},${h/2} H${-w/2+12} Q${-w/2},${h/2} ${-w/2},${h/2-12} V${-h/2+12} Q${-w/2},${-h/2} ${-w/2+12},${-h/2}Z`;
+    return svgNode("path",{d,...attrs});
+  }
+  return svgNode("rect",{x:-w/2,y:-h/2,width:w,height:h,rx:node.type==="persona"||node.type==="operadora"?h/2:20,...attrs});
 }
 function graphRenderNode(node,parent){
   const theme=node.isObjective?GRAPH_THEME.objetivo:GRAPH_THEME[node.type];
   const g=svgNode("g",{class:"graph-node graph-node-"+node.type+(node.isCenter?" graph-node-center":""),transform:`translate(${node.x} ${node.y})`});
   g.style.cursor="pointer";
-  if(node.isObjective){
-    const halo=svgNode("rect",{x:-node.w/2-7,y:-node.h/2-7,width:node.w+14,height:node.h+14,rx:22,fill:"none",stroke:GRAPH_THEME.objetivo.color,"stroke-width":"1.5","stroke-dasharray":"6 5",opacity:".52",filter:"url(#targetGlow)"});
-    g.appendChild(halo);
+  if(node.isObjective||node.isCenter){
+    g.appendChild(svgNode("rect",{x:-node.w/2-8,y:-node.h/2-8,width:node.w+16,height:node.h+16,rx:node.h/2+7,fill:"none",stroke:node.isObjective?GRAPH_THEME.objetivo.color:theme.color,"stroke-width":"1.4","stroke-dasharray":"6 5",opacity:node.isObjective?".58":".28",filter:node.isObjective?"url(#targetGlow)":""}));
   }
-  const card=svgNode("rect",{x:-node.w/2,y:-node.h/2,width:node.w,height:node.h,rx:node.isCenter?18:16,fill:node.isObjective?"url(#objectivePattern)":"#fff",stroke:theme.color,"stroke-width":node.isObjective?2.2:(node.isCenter?1.9:1.35),filter:"url(#nodeShadow)",class:"node-card"});
-  g.appendChild(card);
-  g.appendChild(svgNode("rect",{x:-node.w/2,y:-node.h/2,width:5,height:node.h,rx:2.5,fill:theme.color}));
-  g.appendChild(svgNode("circle",{cx:-node.w/2+31,cy:0,r:19,fill:theme.soft,stroke:theme.color,"stroke-width":"1"}));
-  const icon=svgNode("g",{transform:`translate(${-node.w/2+31} 0)`});
-  icon.innerHTML=graphIconMarkup(node.type,theme.color);
-  g.appendChild(icon);
-
-  const typeText=svgNode("text",{x:-node.w/2+58,y:-10,fill:theme.color,"font-size":"7.5","font-family":"Segoe UI,Arial","font-weight":"900","letter-spacing":".7"});
-  typeText.textContent=node.isObjective?"OBJETIVO":(node.isCenter?"NODO CENTRAL":graphTypeLabel(node.type));
-  g.appendChild(typeText);
-
-  const label=svgNode("text",{x:-node.w/2+58,y:7,fill:"#12231a","font-size":node.type==="persona"||node.type==="operadora"?"9.2":"10","font-family":"Segoe UI,Arial","font-weight":"850"});
-  graphSplitLabel(node.label,node.type==="persona"||node.type==="operadora"?22:19).slice(0,2).forEach((line,i)=>{
-    const t=svgNode("tspan",{x:-node.w/2+58,dy:i===0?0:12});
-    t.textContent=line;label.appendChild(t);
-  });
-  g.appendChild(label);
-
+  g.appendChild(graphCardShape(node,theme));
+  g.appendChild(svgNode("circle",{class:"node-type-dot",cx:-node.w/2+16,cy:-node.h/2+16,r:4.6,fill:theme.color}));
+  const dividerX=-node.w/2+49;
+  g.appendChild(svgNode("line",{x1:dividerX,y1:-node.h/2+13,x2:dividerX,y2:node.h/2-13,stroke:theme.color,"stroke-width":"1",opacity:".18"}));
+  const icon=svgNode("g",{class:"free-icon",transform:`translate(${-node.w/2+28} 3)`});icon.innerHTML=graphIconMarkup(node.type,theme.color);g.appendChild(icon);
+  const typeText=svgNode("text",{x:-node.w/2+60,y:-11,fill:theme.color,"font-size":"7.4","font-family":"Segoe UI,Arial","font-weight":"950","letter-spacing":".75"});
+  typeText.textContent=node.isObjective?"OBJETIVO":(node.isCenter?"NODO PRINCIPAL":graphTypeLabel(node.type));g.appendChild(typeText);
+  const label=svgNode("text",{x:-node.w/2+60,y:8,fill:"#12231a","font-size":node.type==="persona"||node.type==="operadora"?"9.4":"10.2","font-family":"Segoe UI,Arial","font-weight":"850"});
+  graphSplitLabel(node.label,node.type==="persona"||node.type==="operadora"?23:20).slice(0,2).forEach((line,i)=>{const t=svgNode("tspan",{x:-node.w/2+60,dy:i===0?0:12});t.textContent=line;label.appendChild(t)});g.appendChild(label);
   if(node.count>1){
-    const badge=svgNode("g",{transform:`translate(${node.w/2-15} ${-node.h/2+14})`});
-    badge.appendChild(svgNode("circle",{r:10,fill:theme.color}));
-    const bt=svgNode("text",{"text-anchor":"middle","dominant-baseline":"central",fill:"#fff","font-size":"7.5","font-family":"Segoe UI,Arial","font-weight":"900"});
-    bt.textContent=Math.min(99,node.count);badge.appendChild(bt);g.appendChild(badge);
+    const badge=svgNode("g",{transform:`translate(${node.w/2-15} ${-node.h/2+15})`});badge.appendChild(svgNode("circle",{r:10,fill:theme.color}));
+    const bt=svgNode("text",{"text-anchor":"middle","dominant-baseline":"central",fill:"#fff","font-size":"7.5","font-family":"Segoe UI,Arial","font-weight":"900"});bt.textContent=Math.min(99,node.count);badge.appendChild(bt);g.appendChild(badge);
   }
-
-  let down={x:0,y:0};
+  let down={x:0,y:0},lastClick=0;
   g.addEventListener("mouseenter",e=>{graphHighlight(node.id,true);graphShowTooltip(e,node)});
   g.addEventListener("mousemove",e=>graphShowTooltip(e,node));
   g.addEventListener("mouseleave",()=>{graphHighlight(node.id,false);graphHideTooltip()});
   g.addEventListener("pointerdown",e=>{
-    e.preventDefault();e.stopPropagation();
-    g.setPointerCapture?.(e.pointerId);
-    const p=graphSvgPoint(e),t=graphState.transform;
-    graphState.dragNode=node;
-    graphState.dragMoved=false;
-    down={x:e.clientX,y:e.clientY};
-    graphState.dragOffset={
-      x:(p.x-t.x)/t.k-node.x,
-      y:(p.y-t.y)/t.k-node.y
-    };
+    e.preventDefault();e.stopPropagation();g.setPointerCapture?.(e.pointerId);
+    const p=graphSvgPoint(e),t=graphState.transform;graphState.dragNode=node;graphState.dragMoved=false;down={x:e.clientX,y:e.clientY};
+    graphState.dragOffset={x:(p.x-t.x)/t.k-node.x,y:(p.y-t.y)/t.k-node.y};
   });
   g.addEventListener("pointermove",e=>{
-    if(graphState.dragNode!==node)return;
-    if(Math.hypot(e.clientX-down.x,e.clientY-down.y)>4)graphState.dragMoved=true;
-    const p=graphSvgPoint(e),t=graphState.transform;
-    node.x=(p.x-t.x)/t.k-graphState.dragOffset.x;
-    node.y=(p.y-t.y)/t.k-graphState.dragOffset.y;
-    graphUpdateGeometry();
+    if(graphState.dragNode!==node)return;if(Math.hypot(e.clientX-down.x,e.clientY-down.y)>4)graphState.dragMoved=true;
+    const p=graphSvgPoint(e),t=graphState.transform;node.x=(p.x-t.x)/t.k-graphState.dragOffset.x;node.y=(p.y-t.y)/t.k-graphState.dragOffset.y;graphUpdateGeometry();
   });
   g.addEventListener("pointerup",e=>{
-    if(graphState.dragNode!==node)return;
-    graphState.dragNode=null;
-    if(!graphState.dragMoved)showNodeDetail(node,graphState.records);
+    if(graphState.dragNode!==node)return;graphState.dragNode=null;
+    if(!graphState.dragMoved){
+      const now=Date.now();graphSelectNode(node.id,true);
+      if(now-lastClick<360){graphState.options.focusId=node.id;graphState.options.mode="direct";renderGraph(graphState.records,graphState.query)}
+      lastClick=now;
+    }
     try{g.releasePointerCapture?.(e.pointerId)}catch(_){}
   });
-  parent.appendChild(g);
-  graphState.nodeEls.set(node.id,g);
+  parent.appendChild(g);graphState.nodeEls.set(node.id,g);
 }
 function graphBindCanvasInteractions(){
   const svg=graphState.svg;
-  svg.onpointerdown=e=>{
-    if(e.target.closest?.(".graph-node"))return;
-    const p=graphSvgPoint(e);
-    graphState.pan={start:p,x:graphState.transform.x,y:graphState.transform.y};
-    svg.setPointerCapture?.(e.pointerId);
-  };
-  svg.onpointermove=e=>{
-    if(!graphState.pan||graphState.dragNode)return;
-    const p=graphSvgPoint(e);
-    graphState.transform.x=graphState.pan.x+(p.x-graphState.pan.start.x);
-    graphState.transform.y=graphState.pan.y+(p.y-graphState.pan.start.y);
-    graphApplyTransform();
-  };
-  svg.onpointerup=e=>{
-    graphState.pan=null;
-    try{svg.releasePointerCapture?.(e.pointerId)}catch(_){}
-  };
+  svg.onpointerdown=e=>{if(e.target.closest?.(".graph-node"))return;const p=graphSvgPoint(e);graphState.pan={start:p,x:graphState.transform.x,y:graphState.transform.y};svg.setPointerCapture?.(e.pointerId)};
+  svg.onpointermove=e=>{if(!graphState.pan||graphState.dragNode)return;const p=graphSvgPoint(e);graphState.transform.x=graphState.pan.x+(p.x-graphState.pan.start.x);graphState.transform.y=graphState.pan.y+(p.y-graphState.pan.start.y);graphApplyTransform()};
+  svg.onpointerup=e=>{graphState.pan=null;try{svg.releasePointerCapture?.(e.pointerId)}catch(_){}};
   svg.onpointerleave=()=>{graphState.pan=null};
-  svg.onwheel=e=>{
-    e.preventDefault();
-    const p=graphSvgPoint(e),t=graphState.transform;
-    const next=Math.max(.38,Math.min(2.8,t.k*(e.deltaY<0?1.12:.89)));
-    const worldX=(p.x-t.x)/t.k,worldY=(p.y-t.y)/t.k;
-    t.x=p.x-worldX*next;t.y=p.y-worldY*next;t.k=next;
-    graphApplyTransform();
-  };
+  svg.onwheel=e=>{e.preventDefault();const p=graphSvgPoint(e),t=graphState.transform,next=Math.max(.34,Math.min(3,t.k*(e.deltaY<0?1.12:.89))),worldX=(p.x-t.x)/t.k,worldY=(p.y-t.y)/t.k;t.x=p.x-worldX*next;t.y=p.y-worldY*next;t.k=next;graphApplyTransform()};
+}
+function graphModeName(mode){return {principal:"Vista principal",connected:"Más vinculados",direct:"Vínculos directos",all:"Red completa"}[mode]||"Vista principal"}
+function updateGraphStatus(net,query,fullNet){
+  const mode=document.getElementById("graphModeLabel"),n=document.getElementById("graphNodeCount"),e=document.getElementById("graphEdgeCount"),summary=document.getElementById("graphVisibleSummary");
+  if(mode)mode.textContent=net.nodes.length?graphModeName(graphState.options.mode):"Sin datos";
+  if(n)n.textContent=`${net.nodes.length} nodo${net.nodes.length===1?"":"s"}`;
+  if(e)e.textContent=`${net.edges.length} vínculo${net.edges.length===1?"":"s"}`;
+  if(summary){const hidden=Math.max(0,(fullNet?.nodes.length||0)-net.nodes.length);summary.textContent=`Mostrando ${net.nodes.length} de ${fullNet?.nodes.length||0} nodos${hidden?` · ${hidden} ocultos para reducir ruido`:""}`}
+}
+function graphUpdateControls(){
+  document.querySelectorAll("[data-graph-mode]").forEach(b=>b.classList.toggle("active",b.dataset.graphMode===graphState.options.mode));
+  document.querySelectorAll("[data-graph-type]").forEach(b=>b.classList.toggle("active",graphState.options.types.has(b.dataset.graphType)));
+  const layout=document.getElementById("graphLayoutToggle");if(layout){layout.classList.toggle("active",graphState.options.layout==="radial");layout.querySelector("span").textContent=graphState.options.layout==="radial"?"Diseño central":"Orden por tipo"}
+  const labels=document.getElementById("graphLabelsToggle");if(labels)labels.classList.toggle("active",graphState.options.showLabels);
+}
+function graphUpdateSelectionUI(){
+  const bar=document.getElementById("graphSelectionBar"),copy=document.getElementById("graphSelectionCopy");if(!bar||!copy)return;
+  const node=graphState.fullNet?.nodes.find(n=>n.id===graphState.options.selectedId);
+  if(!node){bar.classList.remove("show");copy.innerHTML="";return}
+  bar.classList.add("show");copy.innerHTML=`Seleccionado: <b>${esc(node.label)}</b> · ${esc(graphTypeLabel(node.type))} · ${node.fullDegree||node.degree} vínculos en la red.`;
+}
+function graphSelectNode(id,showDetail=true){
+  graphState.options.selectedId=id;
+  graphState.nodeEls.forEach((el,nodeId)=>el.classList.toggle("selected",nodeId===id));
+  graphUpdateSelectionUI();graphHighlight(id,false);
+  const node=graphState.fullNet?.nodes.find(n=>n.id===id);if(showDetail&&node)showNodeDetail(node,graphState.records);
 }
 function renderGraph(records,query){
-  const wrap=document.getElementById("graphWrap");
-  const svg=document.getElementById("graph");
-  if(!wrap||!svg)return;
-  wrap.querySelectorAll(".graph-empty,.graph-help").forEach(el=>el.remove());
-  graphHideTooltip();
-  svg.innerHTML="";
-
+  const wrap=document.getElementById("graphWrap"),svg=document.getElementById("graph");if(!wrap||!svg)return;
+  wrap.querySelectorAll(".graph-empty,.graph-help").forEach(el=>el.remove());graphHideTooltip();svg.innerHTML="";
+  graphState.records=records||[];graphState.query=query||"";
   if(!records.length){
-    updateGraphStatus({nodes:[],edges:[]},"");
-    const empty=document.createElement("div");
-    empty.className="graph-empty";
-    empty.innerHTML=`<div class="graph-empty-card"><div class="graph-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="5" r="2.2"/><circle cx="19" cy="12" r="2.2"/><path d="m6.6 10.4 3.8-3.8M13.6 6.6l3.8 3.8"/></svg></div><b>No existen datos para graficar</b><span>Carga un PDF, Excel, CSV o TXT, o utiliza el ejemplo de prueba para generar una red profesional.</span></div>`;
-    wrap.appendChild(empty);
-    return;
+    graphState.fullNet={nodes:[],edges:[]};graphState.visibleNet={nodes:[],edges:[]};updateGraphStatus(graphState.visibleNet,"",graphState.fullNet);graphUpdateControls();graphUpdateSelectionUI();
+    const empty=document.createElement("div");empty.className="graph-empty";empty.innerHTML=`<div class="graph-empty-card"><div class="graph-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="5" r="2.2"/><circle cx="19" cy="12" r="2.2"/><path d="m6.6 10.4 3.8-3.8M13.6 6.6l3.8 3.8"/></svg></div><b>No existen datos para graficar</b><span>Carga un PDF, Excel, CSV o TXT. La vista principal mostrará primero las relaciones más importantes.</span></div>`;wrap.appendChild(empty);return;
   }
-
-  const graphRecords=graphRecordsForView(records,query);
-  const net=buildNetwork(graphRecords,query);
-  const center=chooseCenter(net,query);
+  const graphRecords=graphRecordsForView(records,query),fullNet=buildNetwork(graphRecords,query),baseCenter=chooseCenter(fullNet,query);
+  if(!baseCenter)return;
+  if(graphState.options.focusId&&!fullNet.nodes.some(n=>n.id===graphState.options.focusId))graphState.options.focusId=null;
+  if(graphState.options.selectedId&&!fullNet.nodes.some(n=>n.id===graphState.options.selectedId))graphState.options.selectedId=null;
+  const visible=graphVisibleNetwork(fullNet,baseCenter),center=visible.root;
   if(!center)return;
-  const layout=graphLayout(net,center,query);
-  updateGraphStatus(net,query);
-
-  graphState.svg=svg;graphState.wrap=wrap;graphState.W=layout.W;graphState.H=layout.H;
-  graphState.nodes=net.nodes;graphState.edges=net.edges;graphState.nodeById=layout.nodeById;
-  graphState.nodeEls=new Map();graphState.edgeEls=new Map();graphState.labelEls=new Map();
-  graphState.records=records;graphState.query=query;graphState.center=center;
-  graphState.transform={x:0,y:0,k:1};
-
-  svg.setAttribute("viewBox",`0 0 ${layout.W} ${layout.H}`);
-  svg.setAttribute("preserveAspectRatio","xMidYMid meet");
-
-  const defs=svgNode("defs");
-  defs.innerHTML=`
-    <filter id="nodeShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#031d12" flood-opacity=".14"/></filter>
-    <filter id="targetGlow" x="-80%" y="-80%" width="260%" height="260%"><feDropShadow dx="0" dy="0" stdDeviation="7" flood-color="#b4232f" flood-opacity=".36"/></filter>
-    <pattern id="objectivePattern" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#fff"/><rect width="2" height="8" fill="#fdebed"/></pattern>`;
-  svg.appendChild(defs);
-
-  const root=svgNode("g",{class:"graph-stage"});
-  graphState.root=root;
-  svg.appendChild(root);
-  const edgeLayer=svgNode("g",{class:"links"});
-  const labelLayer=svgNode("g",{class:"link-labels"});
-  const nodeLayer=svgNode("g",{class:"nodes"});
-  root.append(edgeLayer,labelLayer,nodeLayer);
-
-  net.edges.forEach(e=>{
-    const st=graphRelationStyle(e.relation);
-    const path=svgNode("path",{d:graphCurvePath(e),fill:"none",stroke:st.color,"stroke-width":Math.min(4,1.35+Math.log2(e.count+1)*.65),"stroke-dasharray":st.dash,"stroke-linecap":"round",opacity:".48"});
-    edgeLayer.appendChild(path);graphState.edgeEls.set(e.id,path);
+  visible.nodes.forEach(n=>{n.isCenter=n.id===center.id;n.isObjective=!!query&&n.id===baseCenter.id});
+  const layout=graphLayout(visible,center);
+  graphState.svg=svg;graphState.wrap=wrap;graphState.W=layout.W;graphState.H=layout.H;graphState.nodes=visible.nodes;graphState.edges=visible.edges;graphState.nodeById=layout.nodeById;
+  graphState.nodeEls=new Map();graphState.edgeEls=new Map();graphState.labelEls=new Map();graphState.center=center;graphState.fullNet=fullNet;graphState.visibleNet=visible;graphState.transform={x:0,y:0,k:1};
+  updateGraphStatus(visible,query,fullNet);graphUpdateControls();graphUpdateSelectionUI();
+  svg.setAttribute("viewBox",`0 0 ${layout.W} ${layout.H}`);svg.setAttribute("preserveAspectRatio","xMidYMid meet");
+  const defs=svgNode("defs");defs.innerHTML=`
+    <filter id="nodeShadow" x="-40%" y="-50%" width="180%" height="200%"><feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#031d12" flood-opacity=".13"/></filter>
+    <filter id="targetGlow" x="-80%" y="-80%" width="260%" height="260%"><feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#b4232f" flood-opacity=".34"/></filter>
+    <filter id="selectedGlow" x="-60%" y="-70%" width="220%" height="240%"><feDropShadow dx="0" dy="0" stdDeviation="7" flood-color="#d5a632" flood-opacity=".48"/></filter>`;svg.appendChild(defs);
+  const root=svgNode("g",{class:"graph-stage"});graphState.root=root;svg.appendChild(root);
+  const edgeLayer=svgNode("g",{class:"links"}),labelLayer=svgNode("g",{class:"link-labels"}),nodeLayer=svgNode("g",{class:"nodes"});root.append(edgeLayer,labelLayer,nodeLayer);
+  visible.edges.forEach(edge=>{
+    const st=graphRelationStyle(edge.relation),path=svgNode("path",{d:graphCurvePath(edge),fill:"none",stroke:st.color,"stroke-width":Math.min(4,1.4+Math.log2(edge.count+1)*.68),"stroke-dasharray":st.dash,"stroke-linecap":"round",opacity:".52"});
+    edgeLayer.appendChild(path);graphState.edgeEls.set(edge.id,path);
   });
-
-  const showLabels=query||net.nodes.length<=19;
+  const showLabels=graphState.options.showLabels||visible.nodes.length<=8;
   if(showLabels){
-    net.edges.filter(e=>e.relation!=="servicio").forEach(e=>{
-      const m=graphEdgeMid(e);
-      const g=svgNode("g",{transform:`translate(${m.x} ${m.y})`,opacity:".92"});
-      g.appendChild(svgNode("rect",{x:-42,y:-9,width:84,height:18,rx:9,fill:"#fff",stroke:"#d7e2da","stroke-width":".8"}));
-      const t=svgNode("text",{"text-anchor":"middle","dominant-baseline":"middle",fill:"#5e6d64","font-size":"8","font-family":"Segoe UI,Arial","font-weight":"800"});
-      t.textContent=graphRelationStyle(e.relation).label;g.appendChild(t);
-      labelLayer.appendChild(g);graphState.labelEls.set(e.id,g);
+    visible.edges.forEach(edge=>{
+      const m=graphEdgeMid(edge),st=graphRelationStyle(edge.relation),labelText=st.label,w=Math.max(72,labelText.length*5.2),g=svgNode("g",{transform:`translate(${m.x} ${m.y})`,opacity:".94"});
+      g.appendChild(svgNode("rect",{x:-w/2,y:-9,width:w,height:18,rx:9,fill:"#fff",stroke:st.color,"stroke-width":".75",opacity:".96"}));
+      const t=svgNode("text",{"text-anchor":"middle","dominant-baseline":"middle",fill:st.color,"font-size":"7.6","font-family":"Segoe UI,Arial","font-weight":"850"});t.textContent=labelText;g.appendChild(t);labelLayer.appendChild(g);graphState.labelEls.set(edge.id,g);
     });
   }
-
-  net.nodes.forEach(n=>graphRenderNode(n,nodeLayer));
-  graphBindCanvasInteractions();
-  graphApplyTransform();
-
-  const help=document.createElement("div");
-  help.className="graph-help";
-  help.innerHTML=`<span><b>${query?"Objetivo priorizado":"Vista priorizada"}:</b> se muestran ${net.nodes.length} nodos y ${net.edges.length} vínculos sin duplicar líneas. Los colores distinguen cada tipo de entidad.</span>`;
-  wrap.appendChild(help);
+  visible.nodes.forEach(n=>graphRenderNode(n,nodeLayer));graphBindCanvasInteractions();graphApplyTransform();
+  if(graphState.options.selectedId&&graphState.nodeEls.has(graphState.options.selectedId))graphSelectNode(graphState.options.selectedId,false);
+  const help=document.createElement("div");help.className="graph-help";help.innerHTML=`<span><b>${graphModeName(graphState.options.mode)}:</b> ${visible.nodes.length} nodos visibles. Usa los filtros para ocultar tipos; selecciona un nodo y pulsa “Ver solo sus vínculos” para aislarlo.</span>`;wrap.appendChild(help);
 }
+function setGraphViewMode(mode){graphState.options.mode=mode;renderGraph(graphState.records.length?graphState.records:CURRENT,graphState.query||CURRENT_QUERY)}
+function toggleGraphLayout(){graphState.options.layout=graphState.options.layout==="radial"?"columns":"radial";renderGraph(graphState.records.length?graphState.records:CURRENT,graphState.query||CURRENT_QUERY)}
+function toggleGraphLabels(){graphState.options.showLabels=!graphState.options.showLabels;renderGraph(graphState.records.length?graphState.records:CURRENT,graphState.query||CURRENT_QUERY)}
+function toggleGraphType(type){
+  if(!GRAPH_TYPES.includes(type))return;
+  if(graphState.options.types.has(type)){if(graphState.options.types.size===1){toast("Debe permanecer visible al menos un tipo de entidad.");return}graphState.options.types.delete(type)}else graphState.options.types.add(type);
+  renderGraph(graphState.records.length?graphState.records:CURRENT,graphState.query||CURRENT_QUERY);
+}
+function findGraphNode(){
+  const input=document.getElementById("graphNodeSearch"),value=(input?.value||"").trim();if(!value){toast("Escribe un número, IMEI, DNI o nombre.");return}
+  const qd=onlyDigits(value),qn=norm(value),nodes=graphState.fullNet?.nodes||[];
+  const matches=nodes.filter(n=>(qd&&onlyDigits(n.raw)===qd)||norm(n.label)===qn||(qd&&onlyDigits(n.raw).includes(qd))||norm(n.label).includes(qn)).sort((a,b)=>b.fullDegree-a.fullDegree||b.count-a.count);
+  if(!matches.length){toast("No se encontró esa entidad en la red visible.");return}
+  const node=matches[0];graphState.options.selectedId=node.id;graphState.options.focusId=node.id;graphState.options.mode="principal";
+  if(!graphState.options.types.has(node.type))graphState.options.types.add(node.type);
+  renderGraph(graphState.records,graphState.query);showNodeDetail(node,graphState.records);toast(`Entidad enfocada: ${node.label}`);
+}
+function focusSelectedGraphNode(){
+  if(!graphState.options.selectedId){toast("Selecciona primero un nodo del gráfico.");return}
+  graphState.options.focusId=graphState.options.selectedId;graphState.options.mode="direct";renderGraph(graphState.records,graphState.query);
+}
+function clearGraphSelection(){graphState.options.selectedId=null;graphUpdateSelectionUI();graphHighlight(null,false);graphState.nodeEls.forEach(el=>el.classList.remove("selected"))}
+function clearGraphFocus(){graphState.options.focusId=null;graphState.options.mode="principal";renderGraph(graphState.records.length?graphState.records:CURRENT,graphState.query||CURRENT_QUERY)}
 function showNodeDetail(n,records){
-  const rel=records.filter(r=>
-    (n.type==="numero"&&r.numero===n.raw)||
-    (n.type==="imei"&&r.imei===n.raw)||
-    (n.type==="dni"&&r.dni===n.raw)||
-    (n.type==="persona"&&norm(r.nombre)===norm(n.raw))||
-    (n.type==="operadora"&&norm(r.operadora)===norm(n.raw))
-  );
-  const nums=new Set(rel.map(r=>r.numero).filter(Boolean));
-  const imeis=new Set(rel.map(r=>r.imei).filter(Boolean));
-  const dnis=new Set(rel.map(r=>r.dni).filter(Boolean));
-  const title=n.type==="dni"?"DNI "+n.raw:n.label;
+  const rel=records.filter(r=>(n.type==="numero"&&r.numero===n.raw)||(n.type==="imei"&&r.imei===n.raw)||(n.type==="dni"&&r.dni===n.raw)||(n.type==="persona"&&norm(r.nombre)===norm(n.raw))||(n.type==="operadora"&&norm(r.operadora)===norm(n.raw)));
+  const nums=new Set(rel.map(r=>r.numero).filter(Boolean)),imeis=new Set(rel.map(r=>r.imei).filter(Boolean)),dnis=new Set(rel.map(r=>r.dni).filter(Boolean)),title=n.type==="dni"?"DNI "+n.raw:n.label;
   document.getElementById("nodeDetail").innerHTML=`
-    <div class="detail">
-      <h3>${esc(title)}</h3>
-      <p><b>Tipo de entidad:</b> ${esc(graphTypeLabel(n.type))}</p>
-      <div class="detail-grid">
-        <div class="detail-kpi"><span>Eventos</span><b>${rel.length}</b></div>
-        <div class="detail-kpi"><span>Vínculos directos</span><b>${n.degree||0}</b></div>
-        <div class="detail-kpi"><span>Números</span><b>${nums.size}</b></div>
-        <div class="detail-kpi"><span>IMEI / DNI</span><b>${imeis.size} / ${dnis.size}</b></div>
-      </div>
-    </div>
-    <div class="detail">
-      <h3>Eventos asociados</h3>
-      ${rel.slice(0,15).map(r=>`<p>${r.numero?tag(r.numero,"num"):""} ${r.imei?tag(r.imei,"imei"):""} ${r.dni?tag(r.dni,"dni"):""}<br>${esc(r.fecha_hora||"Sin fecha")} · ${esc(r.operadora||"Sin operadora")} · ${esc(r.tipo||"Vinculación")}</p>`).join("")||"<p>Sin eventos disponibles.</p>"}
-    </div>`;
+    <div class="detail"><h3>${esc(title)}</h3><p><b>Tipo de entidad:</b> ${esc(graphTypeLabel(n.type))}</p><div class="detail-grid">
+      <div class="detail-kpi"><span>Eventos</span><b>${rel.length}</b></div><div class="detail-kpi"><span>Vínculos en la red</span><b>${n.fullDegree||n.degree||0}</b></div><div class="detail-kpi"><span>Números</span><b>${nums.size}</b></div><div class="detail-kpi"><span>IMEI / DNI</span><b>${imeis.size} / ${dnis.size}</b></div>
+    </div></div>
+    <div class="detail"><h3>Eventos asociados</h3>${rel.slice(0,15).map(r=>`<p>${r.numero?tag(r.numero,"num"):""} ${r.imei?tag(r.imei,"imei"):""} ${r.dni?tag(r.dni,"dni"):""}<br>${esc(r.fecha_hora||"Sin fecha")} · ${esc(r.operadora||"Sin operadora")} · ${esc(r.tipo||"Vinculación")}</p>`).join("")||"<p>Sin eventos disponibles.</p>"}</div>`;
 }
 function graphZoomAt(factor,point){
-  const t=graphState.transform;
-  const next=Math.max(.38,Math.min(2.8,t.k*factor));
-  const p=point||{x:graphState.W/2,y:graphState.H/2};
-  const worldX=(p.x-t.x)/t.k,worldY=(p.y-t.y)/t.k;
-  t.x=p.x-worldX*next;t.y=p.y-worldY*next;t.k=next;
-  graphApplyTransform();
+  const t=graphState.transform,next=Math.max(.34,Math.min(3,t.k*factor)),p=point||{x:graphState.W/2,y:graphState.H/2},worldX=(p.x-t.x)/t.k,worldY=(p.y-t.y)/t.k;t.x=p.x-worldX*next;t.y=p.y-worldY*next;t.k=next;graphApplyTransform();
 }
 function zoomGraph(direction){graphZoomAt(direction>0?1.22:.82)}
-function resetGraphView(){
-  graphState.transform={x:0,y:0,k:1};
-  graphApplyTransform();
-}
-function restartGraphLayout(){
-  renderGraph(graphState.records.length?graphState.records:CURRENT,graphState.query||CURRENT_QUERY);
-  toast("Distribución relacional recalculada.");
-}
+function resetGraphView(){graphState.transform={x:0,y:0,k:1};graphApplyTransform()}
+function restartGraphLayout(){renderGraph(graphState.records.length?graphState.records:CURRENT,graphState.query||CURRENT_QUERY);toast("Distribución relacional recalculada.")}
 async function exportGraphPNG(){
   try{
-    const svg=document.getElementById("graph");
-    if(!svg||!svg.childNodes.length){toast("No existe un grafo para exportar.");return}
-    const clone=svg.cloneNode(true);
-    clone.setAttribute("xmlns","http://www.w3.org/2000/svg");
-    const xml=new XMLSerializer().serializeToString(clone);
-    const blob=new Blob([xml],{type:"image/svg+xml;charset=utf-8"});
-    const url=URL.createObjectURL(blob);
-    const img=new Image();
-    img.onload=()=>{
-      const canvas=document.createElement("canvas");
-      canvas.width=Math.max(1500,graphState.W*1.4);
-      canvas.height=Math.max(900,graphState.H*1.4);
-      const ctx=canvas.getContext("2d");
-      ctx.fillStyle="#f7faf8";ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.drawImage(img,0,0,canvas.width,canvas.height);
-      URL.revokeObjectURL(url);
-      const a=document.createElement("a");
-      a.href=canvas.toDataURL("image/png",.96);
-      a.download="grafo_relacional_divincri.png";
-      a.click();
-      toast("Grafo exportado en PNG.");
-    };
-    img.onerror=()=>{URL.revokeObjectURL(url);toast("No se pudo exportar el grafo.");};
-    img.src=url;
-  }catch(err){console.error(err);toast("No se pudo exportar el grafo.");}
+    const svg=document.getElementById("graph");if(!svg||!svg.childNodes.length){toast("No existe un grafo para exportar.");return}
+    const clone=svg.cloneNode(true);clone.setAttribute("xmlns","http://www.w3.org/2000/svg");
+    const xml=new XMLSerializer().serializeToString(clone),blob=new Blob([xml],{type:"image/svg+xml;charset=utf-8"}),url=URL.createObjectURL(blob),img=new Image();
+    img.onload=()=>{const canvas=document.createElement("canvas");canvas.width=Math.max(1600,graphState.W*1.35);canvas.height=Math.max(950,graphState.H*1.35);const ctx=canvas.getContext("2d");ctx.fillStyle="#f8fbf9";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);const a=document.createElement("a");a.href=canvas.toDataURL("image/png",.96);a.download="grafo_relacional_divincri.png";a.click();toast("Grafo exportado en PNG.")};
+    img.onerror=()=>{URL.revokeObjectURL(url);toast("No se pudo exportar el grafo.")};img.src=url;
+  }catch(err){console.error(err);toast("No se pudo exportar el grafo.")}
 }
 function toggleGraphFull(){
-  const view=document.getElementById("graphView");
-  if(!view)return;
-  if(!document.fullscreenElement && view.requestFullscreen){
-    view.requestFullscreen().catch(()=>{
-      view.classList.toggle("fullscreen-fallback");
-      setTimeout(()=>renderGraph(CURRENT,CURRENT_QUERY),180);
-    });
-  }else if(document.fullscreenElement){
-    document.exitFullscreen();
-  }else{
-    view.classList.toggle("fullscreen-fallback");
-    setTimeout(()=>renderGraph(CURRENT,CURRENT_QUERY),180);
-  }
+  const view=document.getElementById("graphView");if(!view)return;
+  if(!document.fullscreenElement&&view.requestFullscreen){view.requestFullscreen().catch(()=>{view.classList.toggle("fullscreen-fallback");setTimeout(()=>renderGraph(CURRENT,CURRENT_QUERY),180)})}
+  else if(document.fullscreenElement)document.exitFullscreen();
+  else{view.classList.toggle("fullscreen-fallback");setTimeout(()=>renderGraph(CURRENT,CURRENT_QUERY),180)}
 }
 document.addEventListener("fullscreenchange",()=>setTimeout(()=>renderGraph(CURRENT,CURRENT_QUERY),180));
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"){
-    const view=document.getElementById("graphView");
-    if(view?.classList.contains("fullscreen-fallback")){
-      view.classList.remove("fullscreen-fallback");
-      setTimeout(()=>renderGraph(CURRENT,CURRENT_QUERY),180);
-    }
+    const view=document.getElementById("graphView");if(view?.classList.contains("fullscreen-fallback")){view.classList.remove("fullscreen-fallback");setTimeout(()=>renderGraph(CURRENT,CURRENT_QUERY),180)}
   }
 });
+document.getElementById("graphNodeSearch")?.addEventListener("keydown",e=>{if(e.key==="Enter")findGraphNode()});
 
 
 document.getElementById("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter")runSearch()});
