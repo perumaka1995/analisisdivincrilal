@@ -475,7 +475,90 @@
       .hero-copy h1{font-size:32px}
       .nav a{font-size:12px;padding:8px}
     }
-  </style>
+  
+/* MEJORAS PROFESIONALES GRAFO */
+.graph-toolbar{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  padding:10px;
+  background:#fff;
+  border-bottom:1px solid #d7e2da;
+}
+.graph-toolbar button{
+  padding:8px 12px;
+  font-size:12px;
+}
+#graphWrap.fullscreen{
+  position:fixed!important;
+  inset:0;
+  z-index:9999;
+  height:100vh!important;
+  background:#fff;
+}
+.reference-box{
+  margin:15px 0;
+  padding:14px 18px;
+  border-radius:16px;
+  background:linear-gradient(90deg,#fff8e5,#f7faf7);
+  border:1px solid #d7aa34;
+  color:#4b5e52;
+  font-size:13px;
+  line-height:1.5;
+}
+.reference-box b{
+  color:#063d24;
+}
+
+
+/* ===== MEJORA PRESENTACIÓN GRAFO ===== */
+.layout{
+  grid-template-columns:320px 1fr!important;
+  gap:14px;
+}
+#graphWrap{
+  height:720px!important;
+  background:
+  radial-gradient(circle at center,rgba(15,112,66,.08),transparent 45%),
+  linear-gradient(90deg,rgba(0,0,0,.035) 1px,transparent 1px),
+  linear-gradient(rgba(0,0,0,.035) 1px,transparent 1px),
+  #f8faf8!important;
+  background-size:auto,28px 28px,28px 28px;
+}
+.graph-toolbar{
+ display:flex;
+ justify-content:flex-end;
+ gap:8px;
+ padding:10px;
+ border-bottom:1px solid #d7e2da;
+ background:#fff;
+}
+.graph-toolbar button{
+ font-size:12px;
+ padding:8px 12px;
+}
+#graphWrap.fullscreen{
+ position:fixed!important;
+ inset:0!important;
+ height:100vh!important;
+ width:100vw!important;
+ z-index:9999!important;
+ background:white!important;
+}
+.reference-box{
+ margin:15px 0;
+ padding:14px;
+ border-radius:16px;
+ border:1px solid #d7aa34;
+ background:linear-gradient(90deg,#fff9e8,#f7faf7);
+ color:#425248;
+ font-size:13px;
+ line-height:1.5;
+}
+.reference-box b{
+ color:#063d24;
+}
+</style>
 </head>
 <body>
 
@@ -507,7 +590,17 @@
   </nav>
 
   <main>
-    <section class="metrics">
+    <div class="reference-box">
+<b>⚠ Información referencial:</b> Los resultados mostrados corresponden a un análisis técnico-relacional generado a partir de la información cargada en la plataforma. 
+No constituye una conclusión definitiva ni reemplaza la validación con fuentes oficiales, operadoras, CDR, IMSI, ICCID, celdas u otros registros de corroboración.
+</div>
+
+<div class="reference-box">
+<b>⚠ Información referencial:</b> El análisis mostrado es una representación técnica-relacional basada en la información cargada en la plataforma. 
+Los resultados deben ser corroborados con fuentes oficiales, operadoras y registros complementarios antes de cualquier conclusión.
+</div>
+
+<section class="metrics">
       <div class="metric"><span>Registros</span><b id="mReg">0</b></div>
       <div class="metric"><span>Números</span><b id="mNum">0</b></div>
       <div class="metric"><span>IMEI</span><b id="mImei">0</b></div>
@@ -604,7 +697,17 @@
         </div>
 
         <div class="view active" id="graphView">
-          <div id="graphWrap"><svg id="graph"></svg></div>
+          <div class="graph-toolbar">
+<button class="light" onclick="zoomGraph(1)">🔍 Acercar</button>
+<button class="light" onclick="zoomGraph(-1)">🔎 Alejar</button>
+<button class="light" onclick="toggleGraphFull()">⛶ Expandir</button>
+</div>
+<div class="graph-toolbar">
+<button class="light" onclick="zoomGraph(1)">🔍 Acercar</button>
+<button class="light" onclick="zoomGraph(-1)">🔎 Alejar</button>
+<button class="light" onclick="toggleGraphFull()">⛶ Expandir</button>
+</div>
+<div id="graphWrap"><svg id="graph"></svg></div>
           <div class="legend">
             <span><i class="sw" style="background:#c03945"></i> Objetivo</span>
             <span><i class="sw" style="background:#dbeafe"></i> Número</span>
@@ -1148,6 +1251,7 @@ V. ACCIONES INMEDIATAS
 4. Exportar matriz relacional para IBM i2.
 
 VI. NOTA DE CAUTELA
+El presente documento contiene información referencial para apoyo analítico y exposición técnica.
 El presente reporte es de orientación analítica y debe corroborarse con fuente oficial antes de uso procesal.`:"Carga información o realiza una búsqueda para generar el informe automático.";
   document.getElementById("report").textContent=txt;
 }
@@ -1641,6 +1745,34 @@ async function generateIntelligencePDF(){
 document.getElementById("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter")runSearch()});
 window.addEventListener("resize",()=>renderGraph(CURRENT,CURRENT_QUERY));
 loadDB();
+
+let graphScale = 1;
+function zoomGraph(value){
+  graphScale += value*0.15;
+  graphScale=Math.max(0.5,Math.min(2,graphScale));
+  const svg=document.getElementById("graph");
+  if(svg) svg.style.transform=`scale(${graphScale})`;
+  if(svg) svg.style.transformOrigin="center";
+}
+function toggleGraphFull(){
+  const wrap=document.getElementById("graphWrap");
+  if(wrap) wrap.classList.toggle("fullscreen");
+  setTimeout(()=>renderGraph(CURRENT,CURRENT_QUERY),300);
+}
+
+</script>
+
+<script>
+let graphZoom=1;
+function zoomGraph(v){
+ graphZoom=Math.max(.5,Math.min(2,graphZoom+(v*.15)));
+ const s=document.getElementById("graph");
+ if(s){s.style.transform=`scale(${graphZoom})`;s.style.transformOrigin="center";}
+}
+function toggleGraphFull(){
+ const g=document.getElementById("graphWrap");
+ if(g)g.classList.toggle("fullscreen");
+}
 </script>
 </body>
 </html>
