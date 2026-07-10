@@ -7,6 +7,8 @@
   <meta name="description" content="Sistema de análisis de inteligencia y vinculaciones por número, IMEI, DNI y operadora.">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
   <style>
     :root{
       --pnp-green:#063d24;
@@ -523,6 +525,7 @@
             <p>Primero carga tu fuente. Luego busca un <b>número</b>, <b>IMEI</b> o <b>DNI</b> para ver la red ordenada.</p>
             <ul>
               <li>Formatos admitidos: PDF, Excel, CSV y TXT.</li>
+              <li>Desde la pestaña Informe puedes generar un PDF similar al modelo de inteligencia.</li>
               <li>El grafo muestra: número → IMEI → números relacionados → persona/DNI.</li>
               <li>El símbolo de DNI ahora aparece como persona.</li>
             </ul>
@@ -583,6 +586,7 @@
           </div>
 
           <div class="btns">
+            <button class="blue" onclick="generateIntelligencePDF()">Informe PDF</button>
             <button class="gray" onclick="exportCSV()">Exportar CSV</button>
             <button class="gray" onclick="exportI2()">Exportar i2</button>
             <button class="gray" onclick="exportJSON()">Exportar JSON</button>
@@ -621,6 +625,7 @@
         <div class="view" id="reportView">
           <div class="panel-body" id="informe">
             <div class="btns" style="margin-top:0;margin-bottom:12px">
+              <button onclick="generateIntelligencePDF()">Generar informe PDF</button>
               <button onclick="copyReport()">Copiar informe</button>
               <button class="gray" onclick="downloadReport()">Descargar TXT</button>
             </div>
@@ -1167,6 +1172,472 @@ function exportI2(){
 }
 function copyReport(){navigator.clipboard.writeText(document.getElementById("report").textContent).then(()=>toast("Informe copiado."))}
 function downloadReport(){download("informe_divincri_inteligencia.txt",document.getElementById("report").textContent)}
+
+/* ============================================================
+   GENERADOR DE INFORME PDF TIPO INTELIGENCIA
+   ============================================================ */
+
+function parsePdfText(text){
+  const records=[];
+  const clean=(text||"").replace(/\s+/g," ").trim();
+
+  // RENTESEG / Consulta lista vinculaciones:
+  // IMEI - número - fecha/hora - concesionario - Persona natural - DNI - documento - tipo
+  const operadora = "(?:TELEFONICA DEL PERU\\s*S\\.A\\.A\\.|AMERICA MOVIL PERU\\s*S\\.A\\.C\\.|VIETTEL PERU\\s*S\\.A\\.C\\.|ENTEL PERU\\s*S\\.A\\.)";
+  const reVinc = new RegExp("(\\d{14,17})\\s+(\\d{6,11})\\s+(\\d{2}\\/\\d{2}\\/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2})\\s+("+operadora+")\\s+Persona\\s+natural\\s+DNI\\s+(\\d{6,10})\\s+(Vinculaci[oó]n|Desvinculaci[oó]n)", "gi");
+  let m;
+  while((m=reVinc.exec(clean))!==null){
+    records.push(cleanRecord({
+      imei:m[1],
+      numero:m[2],
+      fecha_hora:m[3],
+      operadora:m[4].replace(/\s+/g," ").trim(),
+      dni:m[5],
+      tipo:m[6]||"Vinculación"
+    }));
+  }
+
+  // Consulta servicios móviles: número - DNI - documento - nombre - operadora - fecha/hora
+  const reServ = new RegExp("(\\d{6,11})\\s+DNI\\s+(\\d{6,10})\\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\\s\\.]{5,80}?)\\s+("+operadora+")\\s+(\\d{2}\\/\\d{2}\\/\\d{4})\\s+(\\d{2}:\\d{2}:\\d{2})", "gi");
+  while((m=reServ.exec(clean))!==null){
+    records.push(cleanRecord({
+      numero:m[1],
+      dni:m[2],
+      nombre:m[3].replace(/\s+/g," ").trim(),
+      operadora:m[4].replace(/\s+/g," ").trim(),
+      fecha_hora:m[5]+" "+m[6],
+      tipo:"Titularidad"
+    }));
+  }
+
+  // Respaldo más flexible para algunos PDFs que separan mal columnas
+  if(records.length===0){
+    const reLoose=/(\d{14,17})\s+(\d{6,11})\s+(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}:\d{2}).{0,120}?DNI\s+(\d{6,10}).{0,35}?(Vinculaci[oó]n|Desvinculaci[oó]n)/gi;
+    while((m=reLoose.exec(clean))!==null){
+      records.push(cleanRecord({imei:m[1],numero:m[2],fecha_hora:m[3],dni:m[4],tipo:m[5]||"Vinculación"}));
+    }
+  }
+
+  return records;
+}
+
+function fmtPhone(n){
+  n = onlyDigits(n);
+  return n.length===9 ? "+51 " + n.slice(0,3) + " " + n.slice(3,6) + " " + n.slice(6) : (n || "N/S");
+}
+function countMap(arr){
+  const m = new Map();
+  arr.filter(Boolean).forEach(v=>m.set(v,(m.get(v)||0)+1));
+  return [...m.entries()].sort((a,b)=>b[1]-a[1]);
+}
+function uniq(arr){return [...new Set(arr.filter(Boolean))]}
+function opShort(op){
+  op=(op||"").toUpperCase();
+  if(op.includes("VIETTEL")) return "VIETTEL";
+  if(op.includes("TELEFONICA")) return "TELEFONICA";
+  if(op.includes("AMERICA MOVIL")) return "AMERICA MOVIL";
+  if(op.includes("ENTEL")) return "ENTEL";
+  return op || "N/S";
+}
+function getNameForDni(dni){
+  const rec = DB.find(r=>r.dni===dni && r.nombre);
+  return rec ? rec.nombre : "";
+}
+function inferObjective(){
+  const q=onlyDigits(document.getElementById("searchInput").value || CURRENT_QUERY || "");
+  if(q) return q;
+  const titularNums = DB.filter(r=>!r.imei && r.numero).map(r=>r.numero);
+  const titularTop = countMap(titularNums)[0];
+  if(titularTop) return titularTop[0];
+  const top = countMap(DB.map(r=>r.numero))[0];
+  return top ? top[0] : "";
+}
+function lecturaForRow(row, objective, imeiStats){
+  if(row.numero===objective) return "Objetivo";
+  const sameDni = DB.some(r=>r.numero===objective && r.dni && r.dni===row.dni);
+  if(sameDni) return "Mismo DNI del objetivo";
+  const stat = imeiStats.find(x=>x.imei===row.imei);
+  if(!stat || !row.fecha_hora) return "Relacionado por IMEI";
+  const t=parseDatePE(row.fecha_hora);
+  const objDates=stat.rows.filter(r=>r.numero===objective).map(r=>parseDatePE(r.fecha_hora)).filter(Boolean);
+  if(objDates.length && t < Math.min(...objDates)) return "Uso previo";
+  if(objDates.length && t > Math.max(...objDates)) return "Uso posterior";
+  return "Relacionado por IMEI";
+}
+function buildReportSummary(){
+  const objective = inferObjective();
+  const directAll = DB.filter(r=>r.numero===objective);
+  const directVinc = directAll.filter(r=>r.imei);
+  const titulares = directAll.filter(r=>!r.imei || norm(r.tipo).includes("TITULAR"));
+  let imeis = uniq(directVinc.map(r=>r.imei));
+  if(!imeis.length) imeis = countMap(DB.map(r=>r.imei)).slice(0,6).map(x=>x[0]);
+  const network = DB.filter(r=>r.numero===objective || (r.imei && imeis.includes(r.imei)));
+  const relatedNums = uniq(network.map(r=>r.numero)).filter(n=>n!==objective);
+  const objectiveDnis = countMap(directAll.map(r=>r.dni)).map(x=>x[0]);
+  const mainDni = objectiveDnis[0] || "";
+  const mainName = mainDni ? getNameForDni(mainDni) : (directAll.find(r=>r.nombre)||{}).nombre || "";
+  const historicalDnis = objectiveDnis.filter(d=>d!==mainDni);
+  const ops = uniq(network.map(r=>opShort(r.operadora)));
+  const imeiStats = imeis.map(imei=>{
+    const rows = DB.filter(r=>r.imei===imei).sort((a,b)=>parseDatePE(a.fecha_hora)-parseDatePE(b.fecha_hora));
+    return {
+      imei,
+      rows,
+      count: rows.length,
+      nums: uniq(rows.map(r=>r.numero)),
+      dnis: uniq(rows.map(r=>r.dni)),
+      first: rows[0],
+      last: rows[rows.length-1]
+    };
+  }).sort((a,b)=>b.count-a.count);
+  return {objective,directAll,directVinc,titulares,imeis,network,relatedNums,objectiveDnis,mainDni,mainName,historicalDnis,ops,imeiStats};
+}
+
+function pdfHeader(doc, objective){
+  const w=doc.internal.pageSize.getWidth();
+  doc.setFont("helvetica","italic");
+  doc.setFontSize(8);
+  doc.setTextColor(120,120,120);
+  doc.text("RESERVADO - Análisis técnico objetivo " + (objective||"N/S"), w-12, 8, {align:"right"});
+}
+function pdfFooter(doc){
+  const pageCount = doc.internal.getNumberOfPages();
+  for(let i=1;i<=pageCount;i++){
+    doc.setPage(i);
+    const w=doc.internal.pageSize.getWidth();
+    const h=doc.internal.pageSize.getHeight();
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(8);
+    doc.setTextColor(80,80,80);
+    doc.text("Página " + i, w/2, h-8, {align:"center"});
+  }
+}
+function pdfSection(doc, title, y){
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(17);
+  doc.setTextColor(31, 58, 95);
+  doc.text(title, 12, y);
+  return y+8;
+}
+function pdfSub(doc, title, y){
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(12.5);
+  doc.setTextColor(31, 58, 95);
+  doc.text(title, 12, y);
+  return y+6;
+}
+function pdfPara(doc, text, y, size=10.2){
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(size);
+  doc.setTextColor(25,25,25);
+  const lines=doc.splitTextToSize(text, 186);
+  doc.text(lines, 12, y);
+  return y + lines.length*5.1 + 3;
+}
+function ensurePage(doc, y, need, objective){
+  if(y + need > 277){
+    doc.addPage();
+    pdfHeader(doc, objective);
+    return 18;
+  }
+  return y;
+}
+function autoTableStyled(doc, head, body, startY, opts={}){
+  doc.autoTable({
+    head:[head],
+    body,
+    startY,
+    theme:"grid",
+    styles:{fontSize:8, cellPadding:1.8, overflow:"linebreak", lineColor:[50,50,50], lineWidth:.15},
+    headStyles:{fillColor:[31,58,95], textColor:[255,255,255], halign:"center", fontStyle:"bold"},
+    alternateRowStyles:{fillColor:[255,248,226]},
+    margin:{left:12,right:12},
+    ...opts
+  });
+  return doc.lastAutoTable.finalY + 7;
+}
+function relationStrengthRows(s){
+  const rows=[];
+  if(s.mainDni) rows.push([s.objective+" - DNI "+s.mainDni, "ALTA", "Aparece en titularidad y/o eventos directos del número objetivo.", "Pedir titularidad histórica, contrato/biometría, SIM y portabilidad."]);
+  s.imeiStats.slice(0,4).forEach(st=>{
+    rows.push([s.objective+" - IMEI "+st.imei, "ALTA", (st.rows.filter(r=>r.numero===s.objective).length || 0)+" evento(s) directo(s) del objetivo y "+st.nums.length+" línea(s) en el mismo IMEI.", "Pedir IMSI/ICCID/CDR/celdas por fecha."]);
+  });
+  s.historicalDnis.slice(0,3).forEach(d=>{
+    rows.push([s.objective+" - DNI "+d, "MEDIA/BAJA", "Registro histórico o alternativo; no necesariamente usuario actual.", "Verificar vigencia con operadora/fuente oficial."]);
+  });
+  s.relatedNums.slice(0,4).forEach(n=>{
+    rows.push([n+" - "+s.objective, "MEDIA", "Vínculo por IMEI compartido, no por titularidad directa.", "Confirmar mismo equipo físico, IMSI, ICCID y celdas."]);
+  });
+  return rows;
+}
+async function captureCurrentGraphForPDF(s){
+  try{
+    GRAPH_MODE="search";
+    CURRENT=s.network;
+    CURRENT_QUERY=s.objective;
+    renderGraph(s.network, s.objective);
+    await new Promise(r=>setTimeout(r,250));
+    const svg=document.getElementById("graph");
+    const clone=svg.cloneNode(true);
+    clone.setAttribute("xmlns","http://www.w3.org/2000/svg");
+    const xml=new XMLSerializer().serializeToString(clone);
+    const blob=new Blob([xml],{type:"image/svg+xml;charset=utf-8"});
+    const url=URL.createObjectURL(blob);
+    const img=new Image();
+    return await new Promise(resolve=>{
+      img.onload=()=>{
+        const canvas=document.createElement("canvas");
+        const rect=svg.getBoundingClientRect();
+        canvas.width=Math.max(900, rect.width||900);
+        canvas.height=Math.max(520, rect.height||520);
+        const ctx=canvas.getContext("2d");
+        ctx.fillStyle="#ffffff";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL("image/png",0.92));
+      };
+      img.onerror=()=>{URL.revokeObjectURL(url);resolve(null)};
+      img.src=url;
+    });
+  }catch(e){
+    console.error(e);
+    return null;
+  }
+}
+
+async function generateIntelligencePDF(){
+  if(!DB.length){toast("Carga primero un PDF, Excel, CSV o TXT.");return}
+  if(!window.jspdf || !window.jspdf.jsPDF){toast("No cargó la librería PDF. Revisa tu conexión y recarga la página.");return}
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF("p","mm","a4");
+  const s = buildReportSummary();
+  const today = new Date().toLocaleDateString("es-PE", {year:"numeric", month:"long", day:"numeric"});
+
+  // Página 1
+  pdfHeader(doc, s.objective);
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(20);
+  doc.setTextColor(31,58,95);
+  doc.text("INFORME DE ANÁLISIS DE INTELIGENCIA", 105, 30, {align:"center"});
+  doc.setFontSize(16);
+  doc.text("CASO: ANÁLISIS DE RELACIÓN E IDENTIFICACIÓN DEL NÚMERO " + fmtPhone(s.objective), 105, 45, {align:"center", maxWidth:185});
+  doc.setFont("helvetica","italic");
+  doc.setFontSize(11);
+  doc.setTextColor(20,20,20);
+  doc.text("Vinculación por titularidad, IMEI, líneas asociadas y evidencia documental", 105, 62, {align:"center"});
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(13);
+  doc.setTextColor(180,0,0);
+  doc.text("CLASIFICACIÓN: RESERVADO", 105, 76, {align:"center"});
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(10.5);
+  doc.setTextColor(20,20,20);
+  doc.text("Fecha de elaboración: " + today, 105, 88, {align:"center"});
+
+  let y=100;
+  y=autoTableStyled(doc, ["Campo","Dato"], [
+    ["Objetivo", fmtPhone(s.objective)],
+    ["Tipo de análisis", "Relacional / técnico-administrativo"],
+    ["Fuentes base", "Consulta de servicios móviles, consulta de lista de vinculaciones, archivos PDF/Excel/CSV/TXT cargados en la plataforma."],
+    ["Alcance", "Determinar relación técnica e identificación preliminar asociada al número objetivo."],
+    ["Limitación", "La titularidad o vinculación de IMEI no prueba por sí sola autoría material; requiere corroboración de operadora y registros de tráfico/celda."]
+  ], y, {columnStyles:{0:{fontStyle:"bold",cellWidth:50},1:{cellWidth:132}}});
+
+  // Página 2
+  doc.addPage();
+  pdfHeader(doc, s.objective);
+  y=18;
+  y=pdfSection(doc, "I. RESUMEN EJECUTIVO", y);
+  const mainText = `El presente informe documenta el análisis técnico y relacional del número objetivo ${fmtPhone(s.objective)}. La información revisada permite establecer una identificación administrativa ${s.mainDni ? "asociada al DNI "+s.mainDni+(s.mainName ? ", registrado como "+s.mainName : "") : "a partir de los registros de titularidad y vinculación cargados"}, así como una cadena de vínculos técnicos mediante IMEI asociados al número objetivo.`;
+  y=pdfPara(doc, mainText, y);
+  y=pdfPara(doc, `La evidencia principal proviene de las tablas de titularidad del número, vinculaciones del número y vinculaciones por IMEI. La lectura debe considerarse preliminar y orientativa para diligencias de corroboración.`, y);
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(10.5);
+  doc.setTextColor(190,0,0);
+  doc.text("Conclusión preliminar:", 12, y);
+  y+=6;
+  const bullets=[
+    s.mainDni ? `El número objetivo ${s.objective} aparece vinculado al DNI ${s.mainDni}${s.mainName ? " / "+s.mainName : ""}.` : `El número objetivo ${s.objective} requiere completar datos de titularidad.`,
+    `El número objetivo registra ${s.imeiStats.filter(x=>x.rows.some(r=>r.numero===s.objective)).length || s.imeiStats.length} IMEI asociado(s): ${s.imeiStats.map(x=>x.imei).slice(0,6).join(" / ") || "N/S"}.`,
+    s.imeiStats[0] ? `El IMEI ${s.imeiStats[0].imei} concentra la mayor fuerza relacional, con ${s.imeiStats[0].nums.length} número(s) y ${s.imeiStats[0].dnis.length} DNI/documento(s).` : "No se identifican IMEI en la base cargada.",
+    `Se identifican ${s.relatedNums.length} número(s) relacionado(s) por IMEI compartido.`,
+    "La identificación debe tratarse como indicio técnico-administrativo; para autoría final se debe requerir CDR, IMSI, ICCID, celdas y logs de uso real."
+  ];
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(9.8);
+  doc.setTextColor(25,25,25);
+  bullets.forEach(b=>{ const lines=doc.splitTextToSize("• "+b, 184); doc.text(lines, 14, y); y+=lines.length*4.8+1; });
+  y+=3;
+  y=autoTableStyled(doc, ["Indicador","Resultado"], [
+    ["Número objetivo", fmtPhone(s.objective)],
+    ["Documento directamente asociado", s.mainDni || "N/S"],
+    ["Nombre asociado", s.mainName || "N/S"],
+    ["Titular histórico / alternativo", s.historicalDnis.length ? s.historicalDnis.map(d=>"DNI "+d+(getNameForDni(d)?" - "+getNameForDni(d):"")).join(" / ") : "N/S"],
+    ["IMEI asociados al objetivo", s.imeiStats.map(x=>x.imei).join(" / ") || "N/S"],
+    ["Eventos objetivo-IMEI", String(s.directVinc.length)],
+    ["Números relacionados por IMEI compartido", String(s.relatedNums.length)],
+    ["Nivel de relación", s.mainDni ? "ALTO para identificación administrativa; MEDIO/ALTO para red técnica por IMEI" : "MEDIO para red técnica; pendiente titularidad"]
+  ], y, {columnStyles:{0:{fontStyle:"bold",cellWidth:62},1:{cellWidth:120}}});
+
+  // Página 3: personas
+  doc.addPage();
+  pdfHeader(doc, s.objective);
+  y=18;
+  y=pdfSection(doc, "II. PERSONAS / DOCUMENTOS IDENTIFICADOS EN LA RED TÉCNICA", y);
+  const dniOrder = countMap(s.network.map(r=>r.dni)).map(x=>x[0]).filter(Boolean).slice(0,6);
+  if(!dniOrder.length){ y=pdfPara(doc, "No se identificaron DNI/documentos en los registros cargados.", y); }
+  dniOrder.forEach((dni,idx)=>{
+    y=ensurePage(doc,y,55,s.objective);
+    const name=getNameForDni(dni);
+    y=pdfSub(doc, `2.${idx+1} ${name ? name+" - " : ""}DNI ${dni}`, y);
+    const nums=uniq(s.network.filter(r=>r.dni===dni).map(r=>r.numero));
+    const imeiRel=uniq(s.network.filter(r=>r.dni===dni).map(r=>r.imei));
+    const relation = dni===s.mainDni ? "Titular/abonado principal o documento más reiterado del objetivo." : "Nodo relacionado por titularidad histórica, evento de vinculación o IMEI compartido.";
+    y=autoTableStyled(doc, ["Campo","Dato"], [
+      ["DNI", dni],
+      ["Nombre", name || "N/S"],
+      ["Relación con objetivo", relation],
+      ["Número(s) asociado(s)", nums.join(" / ") || "N/S"],
+      ["IMEI relacionado(s)", imeiRel.join(" / ") || "N/S"],
+      ["Operadoras observadas", uniq(s.network.filter(r=>r.dni===dni).map(r=>opShort(r.operadora))).join(" / ") || "N/S"]
+    ], y, {styles:{fontSize:7.6, cellPadding:1.4}, columnStyles:{0:{fontStyle:"bold",cellWidth:50},1:{cellWidth:132}}});
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(9.6);
+    doc.setTextColor(190,0,0);
+    doc.text("FUNDAMENTO DE VINCULACIÓN:", 12, y);
+    y+=5;
+    y=pdfPara(doc, `El documento DNI ${dni} aparece en ${s.network.filter(r=>r.dni===dni).length} evento(s) dentro de la red analizada. Su relación debe corroborarse con registros de operadora, validación oficial de identidad y datos técnicos de uso real.`, y, 9);
+  });
+
+  // Página 4: líneas e IMEI
+  doc.addPage();
+  pdfHeader(doc, s.objective);
+  y=18;
+  y=pdfSection(doc, "III. LÍNEAS TELEFÓNICAS E IMEI RELACIONADOS", y);
+  y=pdfSub(doc, "3.1 Número objetivo: " + fmtPhone(s.objective), y);
+  y=autoTableStyled(doc, ["Campo","Dato"], [
+    ["Documento asociado principal", s.mainDni ? "DNI "+s.mainDni+(s.mainName ? " - "+s.mainName : "") : "N/S"],
+    ["Documento(s) alternativo(s)/histórico(s)", s.historicalDnis.length ? s.historicalDnis.map(d=>"DNI "+d+(getNameForDni(d)?" - "+getNameForDni(d):"")).join(" / ") : "N/S"],
+    ["IMEI observados", s.imeiStats.map(x=>x.imei).join(" / ") || "N/S"],
+    ["Operadoras observadas", s.ops.join(" / ") || "N/S"],
+    ["Cantidad de vinculaciones directas", String(s.directVinc.length)]
+  ], y, {columnStyles:{0:{fontStyle:"bold",cellWidth:55},1:{cellWidth:127}}});
+
+  s.imeiStats.slice(0,4).forEach((st,idx)=>{
+    y=ensurePage(doc,y,70,s.objective);
+    y=pdfSub(doc, `3.${idx+2} IMEI ${st.imei} - ${idx===0 ? "ESLABÓN TÉCNICO PRINCIPAL" : "ESLABÓN TÉCNICO"}`, y);
+    const rows=st.rows.slice(0,18).map(r=>[
+      r.numero || "N/S",
+      r.dni || "N/S",
+      r.fecha_hora || "N/S",
+      opShort(r.operadora),
+      lecturaForRow(r,s.objective,s.imeiStats)
+    ]);
+    y=autoTableStyled(doc, ["Número","DNI abonado","Fecha/hora","Operadora","Lectura"], rows, y, {styles:{fontSize:7.2, cellPadding:1.2}, columnStyles:{0:{cellWidth:28},1:{cellWidth:27},2:{cellWidth:36},3:{cellWidth:35},4:{cellWidth:56}}});
+    y=pdfPara(doc, `Conclusión del IMEI ${st.imei}: enlaza ${st.nums.length} número(s) y ${st.dnis.length} documento(s). Debe verificarse circulación del equipo, multi-SIM, préstamo/reventa o posible duplicidad/clonación mediante IMSI, ICCID, CDR y celdas.`, y, 9.2);
+  });
+
+  // Página 5: cadena de evidencia
+  doc.addPage();
+  pdfHeader(doc, s.objective);
+  y=18;
+  y=pdfSection(doc, "IV. CADENA DE EVIDENCIA: TITULARIDAD Y VINCULACIÓN DEL OBJETIVO", y);
+  y=pdfSub(doc, "4.1 Titularidad / activación del número " + s.objective, y);
+  const titRows = s.titulares.length ? s.titulares.map((r,i)=>[i+1, r.numero||s.objective, r.dni ? "DNI "+r.dni : "N/S", r.nombre||"N/S", opShort(r.operadora), r.fecha_hora||"N/S"]) : [[1,s.objective,"N/S","N/S","N/S","N/S"]];
+  y=autoTableStyled(doc, ["Item","Número","Documento","Nombre","Operadora","Fecha activación"], titRows, y, {styles:{fontSize:7.2, cellPadding:1.1}});
+  y=pdfPara(doc, "Lectura: los registros de titularidad permiten orientar la identificación administrativa del número objetivo, sin sustituir la certificación oficial de la operadora.", y, 9.2);
+
+  y=ensurePage(doc,y,70,s.objective);
+  y=pdfSub(doc, "4.2 Vinculaciones directas del número " + s.objective, y);
+  const dirRows = s.directVinc.length ? s.directVinc.map((r,i)=>[i+1, r.imei||"N/S", r.fecha_hora||"N/S", opShort(r.operadora), r.dni?"DNI "+r.dni:"N/S", r.tipo||"Vinculación"]) : [[1,"N/S","N/S","N/S","N/S","Sin eventos directos"]];
+  y=autoTableStyled(doc, ["Item","IMEI","Fecha/hora","Operadora","Documento","Tipo"], dirRows, y, {styles:{fontSize:7.2, cellPadding:1.1}});
+  y=pdfPara(doc, "Lectura: los eventos directos permiten establecer la relación número-IMEI-documento en fechas concretas.", y, 9.2);
+
+  y=ensurePage(doc,y,70,s.objective);
+  y=pdfSub(doc, "4.3 Matriz de relación por fuerza probatoria", y);
+  y=autoTableStyled(doc, ["Relación","Fuerza","Motivo","Acción de corroboración"], relationStrengthRows(s), y, {styles:{fontSize:7.1, cellPadding:1.1}, columnStyles:{0:{cellWidth:46},1:{cellWidth:23},2:{cellWidth:58},3:{cellWidth:55}}});
+
+  // Página 6: mapa relacional
+  doc.addPage();
+  pdfHeader(doc, s.objective);
+  y=18;
+  y=pdfSection(doc, "V. MAPA RELACIONAL PARA IBM i2", y);
+  y=pdfPara(doc, "El siguiente esquema resume los nodos y vínculos principales para comprensión rápida. En i2, el número objetivo debe ir como nodo central, con enlaces hacia sus IMEI, documentos/personas y números relacionados por IMEI compartido.", y);
+  const graphImg = await captureCurrentGraphForPDF(s);
+  if(graphImg){
+    doc.addImage(graphImg, "PNG", 16, y, 178, 100);
+    y += 108;
+    doc.setFont("helvetica","italic");
+    doc.setFontSize(8.5);
+    doc.setTextColor(40,40,40);
+    doc.text(`Figura 1. Relación central del número objetivo ${s.objective} por titularidad e IMEI compartido.`, 105, y, {align:"center"});
+    y+=10;
+  }
+  y=pdfSub(doc, "5.1 Lectura del grafo", y);
+  const graphBullets=[
+    "El nodo objetivo corresponde al número consultado.",
+    "Los nodos IMEI funcionan como puentes técnicos entre líneas.",
+    "Los nodos DNI/persona orientan identificación administrativa y titulares asociados.",
+    "Los números relacionados por IMEI compartido son nodos de expansión investigativa; no deben tratarse como autores por sí mismos sin corroboración técnica."
+  ];
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(9.8);
+  doc.setTextColor(25,25,25);
+  graphBullets.forEach(b=>{ const lines=doc.splitTextToSize("• "+b,184); doc.text(lines,14,y); y+=lines.length*4.8+1; });
+
+  // Página 7: hipótesis
+  doc.addPage();
+  pdfHeader(doc, s.objective);
+  y=18;
+  y=pdfSection(doc, "VI. ANÁLISIS DE HIPÓTESIS Y MODUS TÉCNICO", y);
+  y=pdfSub(doc, "6.1 Hipótesis principal", y);
+  y=pdfPara(doc, `El número objetivo ${s.objective} se encuentra administrativamente asociado a los documentos identificados y técnicamente enlazado a una red de números por el uso de ${s.imeiStats.length} IMEI. El IMEI ${s.imeiStats[0]?.imei || "N/S"} es el principal conector por cantidad de eventos y líneas asociadas.`, y);
+  y=pdfSub(doc, "6.2 Hipótesis alternativas que deben descartarse", y);
+  const hyps=[
+    "Uso real por titular administrativo en las fechas señaladas.",
+    "Préstamo o circulación del equipo entre varios usuarios.",
+    "Reventa o transferencia informal de SIM/equipo.",
+    "Duplicidad o clonación de IMEI.",
+    "Registro histórico no vigente o error administrativo."
+  ];
+  hyps.forEach(h=>{y=pdfPara(doc,"• "+h,y,9.5)});
+  y=ensurePage(doc,y,70,s.objective);
+  y=pdfSection(doc, "VII. ACCIONES INMEDIATAS RECOMENDADAS", y);
+  y=autoTableStyled(doc, ["Prioridad","Entidad","Dato base","Requerimiento","Finalidad"], [
+    [1,"Operadora móvil",s.objective,"Titularidad histórica, contrato, biometría/validación, portabilidad, reposiciones SIM, IMSI, ICCID, CDR voz/SMS/datos y celdas.","Confirmar uso real de la línea y titularidad vigente."],
+    [2,"Operadora móvil",s.imeiStats[0]?.imei || "IMEI principal","Todas las líneas/MSISDN/IMSI/ICCID que usaron el IMEI, con celdas por fecha/hora.","Reconstruir circulación del equipo principal."],
+    [3,"RENIEC / fuente oficial",s.objectiveDnis.map(d=>"DNI "+d).join(" / ") || "DNI relacionados","Validación/certificación de identidad y vigencia.","Evitar depender solo de capturas."],
+    [4,"i2 / análisis de inteligencia","Matriz generada","Importar nodos y vínculos; marcar fuerza probatoria y fechas.","Visualizar red y priorizar diligencias."]
+  ], y, {styles:{fontSize:6.8, cellPadding:1.1}, columnStyles:{0:{cellWidth:17},1:{cellWidth:35},2:{cellWidth:34},3:{cellWidth:60},4:{cellWidth:36}}});
+
+  // Página final: conclusiones y anexo
+  doc.addPage();
+  pdfHeader(doc, s.objective);
+  y=18;
+  y=pdfSection(doc, "VIII. CONCLUSIONES", y);
+  const concl=[
+    `PRIMERA: El número objetivo ${s.objective} presenta ${s.mainDni ? "identificación administrativa asociada al DNI "+s.mainDni+(s.mainName ? " / "+s.mainName : "") : "identificación administrativa pendiente de consolidación"}.`,
+    `SEGUNDA: ${s.imeiStats[0] ? "El IMEI "+s.imeiStats[0].imei+" constituye el eslabón técnico principal, ya que conecta al objetivo con múltiples números, documentos y operadoras." : "No se identificó IMEI principal en la base cargada."}`,
+    `TERCERA: Los números relacionados por IMEI compartido (${s.relatedNums.slice(0,12).join(", ") || "N/S"}) son nodos de expansión investigativa.`,
+    "CUARTA: La evidencia permite orientar diligencias e identificación preliminar, pero la atribución de autoría debe cerrarse con requerimientos oficiales a operadoras y validación de fuentes primarias."
+  ];
+  concl.forEach(c=>{y=pdfPara(doc,c,y,9.7)});
+  y=ensurePage(doc,y,80,s.objective);
+  y=pdfSection(doc, "IX. ANEXO: DATOS PARA CARGA EN IBM i2", y);
+  const anexo=[];
+  anexo.push(["Teléfono",s.objective,"TEL "+s.objective,"OBJETIVO"]);
+  s.objectiveDnis.slice(0,8).forEach(d=>anexo.push(["Persona","DNI "+d,getNameForDni(d)||"DNI "+d,d===s.mainDni?"Titular principal":"Relacionado"]));
+  s.imeiStats.slice(0,8).forEach((st,i)=>anexo.push(["IMEI",st.imei,"IMEI "+st.imei,i===0?"Equipo/eslabón principal":"Equipo/eslabón"]));
+  s.relatedNums.slice(0,20).forEach(n=>anexo.push(["Teléfono",n,"TEL "+n,"Relacionado por IMEI"]));
+  y=autoTableStyled(doc, ["Tipo nodo","Clave","Etiqueta sugerida","Rol"], anexo, y, {styles:{fontSize:7.1, cellPadding:1.1}, columnStyles:{0:{cellWidth:30},1:{cellWidth:45},2:{cellWidth:62},3:{cellWidth:45}}});
+
+  pdfFooter(doc);
+  doc.save("INFORME_ANALISIS_OBJETIVO_" + (s.objective || "SIN_OBJETIVO") + ".pdf");
+  toast("Informe PDF generado.");
+}
+
 document.getElementById("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter")runSearch()});
 window.addEventListener("resize",()=>renderGraph(CURRENT,CURRENT_QUERY));
 loadDB();
