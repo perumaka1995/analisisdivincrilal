@@ -22,6 +22,8 @@
     }
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;color:var(--ink);font-family:Inter,"Segoe UI",Arial,sans-serif;background:linear-gradient(180deg,#eef5f0,#f8faf8 40%,#edf4ef)}
     button,input,textarea,select{font:inherit}button{cursor:pointer}a{color:inherit}
+    @media(min-width:1200px){body{zoom:1.055}}
+    .metric .ico svg{width:23px;height:23px;display:block;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
     .top{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:15px;min-height:74px;padding:10px 24px;background:rgba(255,255,255,.94);border-bottom:1px solid var(--line);box-shadow:0 7px 25px rgba(3,36,22,.08);backdrop-filter:blur(16px)}
     .logo{width:48px;height:48px;object-fit:contain;padding:3px;border-radius:12px;background:#fff;border:1px solid rgba(199,146,22,.45)}
     .brand{margin-right:auto;color:var(--pnp-800);font-size:15px;font-weight:950;line-height:1.15}.brand small{display:block;margin-top:4px;color:var(--muted);font-size:10px;font-weight:700}
@@ -64,8 +66,8 @@
       <article class="metric"><div class="ico">≡</div><div><span>Registros</span><b id="mReg">0</b></div></article>
       <article class="metric"><div class="ico">☎</div><div><span>Números</span><b id="mNum">0</b></div></article>
       <article class="metric"><div class="ico">▣</div><div><span>IMEI</span><b id="mImei">0</b></div></article>
-      <article class="metric"><div class="ico">ID</div><div><span>DNI</span><b id="mDni">0</b></div></article>
-      <article class="metric"><div class="ico">●</div><div><span>Personas</span><b id="mPer">0</b></div></article>
+      <article class="metric"><div class="ico" aria-label="Documento DNI"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.8h8.2L19 7.6V21H6z"/><path d="M14.2 2.8v5H19"/><path d="M9 12h7M9 15.5h7M9 9h2.8"/></svg></div><div><span>DNI</span><b id="mDni">0</b></div></article>
+      <article class="metric"><div class="ico" aria-label="Persona"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7.5" r="3.8"/><path d="M4.5 21c.4-5.2 3.2-8 7.5-8s7.1 2.8 7.5 8"/></svg></div><div><span>Personas</span><b id="mPer">0</b></div></article>
       <article class="metric"><div class="ico">⇄</div><div><span>Vínculos</span><b id="mLinks">0</b></div></article>
       <article class="metric" title="Contador público con respaldo local"><div class="ico">👁</div><div><span>Vistas</span><b id="mViews">0</b><div class="counter-note" id="viewCounterStatus">Cargando contador…</div></div></article>
     </section>
@@ -109,8 +111,8 @@
           </div>
           <div class="divider"></div>
           <div class="btns">
-            <button class="btn blue" id="btnPDF">Informe PDF</button><button class="btn light" id="btnCSV">Exportar CSV</button>
-            <button class="btn light" id="btnJSON">Exportar JSON</button><button class="btn red" id="btnClear">Limpiar base</button>
+            <button class="btn blue" id="btnPDF">Informe PDF analítico</button><button class="btn gold" id="btnExcel">Descargar Excel</button>
+            <button class="btn light" id="btnCSV">Exportar CSV</button><button class="btn light" id="btnJSON">Exportar JSON</button><button class="btn red" id="btnClear">Limpiar base</button>
           </div>
         </div>
       </aside>
@@ -151,7 +153,7 @@
           <div id="graphWrap">
             <svg id="graph" aria-label="Grafo de vinculaciones"></svg>
             <div class="graph-empty" id="graphEmpty"><div class="empty-card"><b>Sin información para graficar</b><span>Carga un archivo, pega datos o agrega un registro manual. Las fechas de cada registro aparecerán en sus enlaces.</span></div></div>
-            <div class="graph-help"><b>Edición:</b> haz clic sobre una entidad, una línea o la etiqueta amarilla de fecha. Doble clic o clic derecho abre la edición. Supr/Delete elimina la selección. Arrastra las entidades y los textos para ordenarlos.</div>
+            <div class="graph-help"><b>Edición:</b> haz clic sobre una entidad, una línea o la etiqueta amarilla de fecha. Doble clic o clic derecho abre la edición. Supr/Delete elimina la selección. Arrastra las entidades y los textos para ordenarlos. Las entidades quedan fijas y no se moverán solas.</div>
           </div>
           <div class="legend"><span><i class="dot objective"></i>Objetivo</span><span><i class="dot numero"></i>Número</span><span><i class="dot imei"></i>IMEI</span><span><i class="dot dni"></i>DNI</span><span><i class="dot persona"></i>Persona</span><span><i class="dot operadora"></i>Operadora</span><span><i class="dot custom"></i>Manual</span></div>
           <div class="detail-strip"><div class="detail-card" id="selectedDetail"><h3>Detalle de selección</h3><p>Selecciona una entidad, vínculo o texto del gráfico.</p></div><div class="detail-card" id="dateDetail"><h3>Fechas de vinculación</h3><p>Las fechas del enlace seleccionado aparecerán aquí.</p></div></div>
@@ -163,7 +165,8 @@
           <div class="report" id="informe">
             <div class="btns no-print" style="margin-bottom:12px">
               <button class="btn blue" id="btnGenerateReport">Actualizar vista previa</button>
-              <button class="btn gold" id="btnReportPDF">Descargar informe PDF</button>
+              <button class="btn gold" id="btnReportPDF">Descargar informe PDF analítico</button>
+              <button class="btn light" id="btnReportExcel">Descargar Excel completo</button>
               <button class="btn light" id="btnCopyReport">Copiar resumen</button>
               <button class="btn light" id="btnTxtReport">Descargar TXT</button>
             </div>
@@ -198,7 +201,7 @@
     const EDIT_KEY="divincri_relacional_ediciones_v5";
     const VIEW_KEY="divincri_vistas_local_v1";
     const VIEW_SESSION_KEY="divincri_vista_sesion_v1";
-    const APP_VERSION="7.0";
+    const APP_VERSION="8.0";
     const typeColors={numero:"#1769aa",imei:"#158356",dni:"#c16a06",persona:"#7b51b8",operadora:"#227989",custom:"#596b60"};
     const typeIcons={numero:"",imei:"▣",dni:"ID",persona:"●",operadora:"OP",custom:"+"};
     const DEMO_RECORDS=[
@@ -208,7 +211,7 @@
       {numero:"926014324",imei:"864050055985357",dni:"45579415",nombre:"PERSONA DE PRUEBA 04",operadora:"CLARO",tipo:"Vinculación técnica",fecha_hora:"14/04/2026 09:05",observacion:"Registro demostrativo"},
       {numero:"938688287",imei:"864050055985357",dni:"76366071",nombre:"PERSONA DE PRUEBA 05",operadora:"ENTEL",tipo:"Vinculación técnica",fecha_hora:"18/04/2026 21:10",observacion:"Registro demostrativo"}
     ];
-    const emptyEdits=()=>({hiddenNodes:[],hiddenEdges:[],nodeOverrides:{},edgeOverrides:{},customNodes:[],customEdges:[],annotations:[]});
+    const emptyEdits=()=>({hiddenNodes:[],hiddenEdges:[],nodeOverrides:{},edgeOverrides:{},customNodes:[],customEdges:[],annotations:[],nodePositions:{}});
     let records=[];let edits=emptyEdits();let graphData={nodes:[],edges:[]};let filteredGraph={nodes:[],edges:[]};
     let selected=null;let objectiveId=null;let graphMode="all";let enabledTypes=new Set(["numero","imei","dni","persona","operadora","custom"]);let currentModal=null;
     let simulation=null,svg=null,rootG=null,zoomBehavior=null,currentTransform=d3.zoomIdentity;
@@ -301,6 +304,7 @@
 
     function renderGraph(){
       const wrap=$("graphWrap"),w=wrap.clientWidth||900,h=wrap.clientHeight||690;
+      if(simulation)simulation.stop();
       svg=d3.select("#graph");
       svg.selectAll("*").remove();
       $("graphEmpty").style.display=filteredGraph.nodes.length?"none":"grid";
@@ -310,7 +314,7 @@
       const defs=svg.append("defs");
       defs.append("filter").attr("id","shadow").html('<feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.18"/>');
       rootG=svg.append("g");
-      zoomBehavior=d3.zoom().scaleExtent([.22,4]).on("zoom",ev=>{currentTransform=ev.transform;rootG.attr("transform",ev.transform)});
+      zoomBehavior=d3.zoom().scaleExtent([.25,4]).on("zoom",ev=>{currentTransform=ev.transform;rootG.attr("transform",ev.transform)});
       svg.call(zoomBehavior).on("dblclick.zoom",null);
 
       const nodes=filteredGraph.nodes,edges=filteredGraph.edges;
@@ -320,13 +324,40 @@
         e.target=nodeById.get(typeof e.target==="object"?e.target.id:e.target);
       });
 
-      const xTargets={dni:w*.17,persona:w*.12,numero:w*.42,imei:w*.68,operadora:w*.88,custom:w*.52};
+      /* Diseño estático: calcula el orden una sola vez y detiene la simulación.
+         Los nodos ya no se desplazan por sí solos. */
+      const xTargets={persona:w*.10,dni:w*.23,numero:w*.43,imei:w*.67,operadora:w*.87,custom:w*.54};
+      const grouped=d3.group(nodes,d=>d.type);
+      const hashValue=value=>{let hsh=0;for(const c of String(value)){hsh=((hsh<<5)-hsh+c.charCodeAt(0))|0}return Math.abs(hsh)};
+      grouped.forEach((group,type)=>{
+        group.sort((a,b)=>String(a.label).localeCompare(String(b.label),"es",{numeric:true}));
+        const step=Math.max(48,(h-90)/(group.length+1));
+        group.forEach((n,i)=>{
+          const saved=edits.nodePositions?.[n.id];
+          if(saved&&Number.isFinite(saved.x)&&Number.isFinite(saved.y)){
+            n.x=Math.max(35,Math.min(w-35,saved.x*w));
+            n.y=Math.max(35,Math.min(h-35,saved.y*h));
+            n.fx=n.x;n.fy=n.y;
+          }else{
+            const jitter=(hashValue(n.id)%17)-8;
+            n.x=(xTargets[type]||w*.5)+jitter;
+            n.y=Math.max(42,Math.min(h-42,42+(i+1)*step));
+            n.fx=null;n.fy=null;
+          }
+        });
+      });
+
       simulation=d3.forceSimulation(nodes)
-        .force("link",d3.forceLink(edges).id(d=>d.id).distance(d=>118+Math.min(90,d.count*8)).strength(.52))
-        .force("charge",d3.forceManyBody().strength(-470))
-        .force("collision",d3.forceCollide().radius(52))
-        .force("x",d3.forceX(d=>xTargets[d.type]||w*.5).strength(.28))
-        .force("y",d3.forceY(h*.48).strength(.08));
+        .randomSource(d3.randomLcg(.417))
+        .force("link",d3.forceLink(edges).id(d=>d.id).distance(d=>112+Math.min(72,(d.count||1)*6)).strength(.42))
+        .force("charge",d3.forceManyBody().strength(-390))
+        .force("collision",d3.forceCollide().radius(47).iterations(2))
+        .force("x",d3.forceX(d=>xTargets[d.type]||w*.5).strength(.34))
+        .force("y",d3.forceY(h*.49).strength(.045))
+        .stop();
+      for(let i=0;i<210;i++)simulation.tick();
+      nodes.forEach(n=>{n.x=Math.max(35,Math.min(w-35,n.x));n.y=Math.max(35,Math.min(h-35,n.y))});
+      simulation.stop();
 
       const edgeG=rootG.append("g").attr("class","edges").selectAll("g")
         .data(edges,d=>d.id).join("g").attr("class","edge-item");
@@ -334,7 +365,7 @@
       edgeG.append("line")
         .attr("class","edge-visible")
         .attr("stroke",d=>edgeColor(d))
-        .attr("stroke-width",d=>Math.min(4,1.5+Math.log2(d.count+1)))
+        .attr("stroke-width",d=>Math.min(4,1.5+Math.log2((d.count||1)+1)))
         .attr("stroke-dasharray",d=>/DNI|Identidad/i.test(d.relation)?"6 4":null)
         .attr("opacity",.76);
 
@@ -368,12 +399,7 @@
       dateG.append("rect").attr("class","date-card").attr("rx",9);
       dateG.append("rect").attr("class","date-icon-bg").attr("x",-9).attr("y",-8).attr("width",18).attr("height",16).attr("rx",4);
       dateG.append("path").attr("class","date-icon-line").attr("d","M-5,-3 H5 M-4,-6 V-3 M4,-6 V-3 M-5,0 H5 M-5,3 H1");
-      dateG.append("text")
-        .attr("class","date-text")
-        .attr("text-anchor","start")
-        .attr("x",14)
-        .attr("dy",3.4)
-        .text(d=>edgeDateLabel(d));
+      dateG.append("text").attr("class","date-text").attr("text-anchor","start").attr("x",14).attr("dy",3.4).text(d=>edgeDateLabel(d));
       fitDateLabelRects(dateG);
 
       const nodeG=rootG.append("g").attr("class","nodes").selectAll("g")
@@ -395,9 +421,20 @@
       phoneG.append("circle").attr("cx",0).attr("cy",11).attr("r",1.35).attr("fill","#1769aa");
       phoneG.append("path").attr("d","M-4,4 V2 M-1,4 V0 M2,4 V-2 M5,4 V-5").attr("stroke","#fff").attr("stroke-width",1.2).attr("stroke-linecap","round").attr("fill","none");
 
-      nodeG.filter(d=>d.type!=="numero").append("text")
+      /* Icono DNI: documento con esquina doblada y líneas legibles. */
+      const dniG=nodeG.filter(d=>d.type==="dni").append("g").attr("class","dni-document");
+      dniG.append("path").attr("d","M-9,-14 H3 L10,-7 V14 H-9 Z").attr("fill","none").attr("stroke","#fff").attr("stroke-width",2).attr("stroke-linejoin","round");
+      dniG.append("path").attr("d","M3,-14 V-7 H10").attr("fill","none").attr("stroke","#fff").attr("stroke-width",2);
+      dniG.append("path").attr("d","M-5,-2 H6 M-5,3 H6 M-5,8 H3").attr("fill","none").attr("stroke","#fff").attr("stroke-width",1.7).attr("stroke-linecap","round");
+
+      /* Icono persona: cabeza y silueta de hombros. */
+      const personG=nodeG.filter(d=>d.type==="persona").append("g").attr("class","person-silhouette");
+      personG.append("circle").attr("cx",0).attr("cy",-7).attr("r",5.2).attr("fill","#fff");
+      personG.append("path").attr("d","M-13,13 C-12,4 -7,0 0,0 C7,0 12,4 13,13 Z").attr("fill","#fff");
+
+      nodeG.filter(d=>!["numero","dni","persona"].includes(d.type)).append("text")
         .attr("class","node-icon").attr("text-anchor","middle").attr("dy",4).attr("fill","#fff")
-        .attr("font-size",d=>d.type==="dni"||d.type==="operadora"?8:13).attr("font-weight",950)
+        .attr("font-size",d=>d.type==="operadora"?8:13).attr("font-weight",950)
         .text(d=>typeIcons[d.type]||"+");
 
       nodeG.append("text").attr("class","node-type").attr("text-anchor","middle").attr("y",-34)
@@ -416,37 +453,26 @@
       annG.append("text").attr("text-anchor","middle").attr("fill","#654b10").attr("font-size",9).attr("font-weight",800).each(function(d){wrapSvgText(d3.select(this),d.text,0,-5,22)});
 
       svg.on("click",()=>clearSelection());
-      simulation.on("tick",()=>{
+      const updatePositions=()=>{
         edgeG.selectAll("line").attr("x1",d=>d.source.x).attr("y1",d=>d.source.y).attr("x2",d=>d.target.x).attr("y2",d=>d.target.y);
         relationG.attr("transform",d=>`translate(${(d.source.x+d.target.x)/2},${(d.source.y+d.target.y)/2-16})`);
         dateG.attr("transform",d=>`translate(${(d.source.x+d.target.x)/2},${(d.source.y+d.target.y)/2+16})`);
         nodeG.attr("transform",d=>`translate(${d.x},${d.y})`);
-      });
-
-      setTimeout(()=>centerGraph(false),700);
+      };
+      updatePositions();
+      requestAnimationFrame(()=>centerGraph(false));
       updateSelectionStyles();
       updateMetrics();
 
       function fitLabelRects(groups,padX,padY){
-        groups.each(function(){
-          const g=d3.select(this),node=g.select("text").node();
-          if(!node)return;
-          const bb=node.getBBox();
-          g.select("rect").attr("x",bb.x-padX).attr("y",bb.y-padY).attr("width",bb.width+padX*2).attr("height",bb.height+padY*2);
-        });
+        groups.each(function(){const g=d3.select(this),node=g.select("text").node();if(!node)return;const bb=node.getBBox();g.select("rect").attr("x",bb.x-padX).attr("y",bb.y-padY).attr("width",bb.width+padX*2).attr("height",bb.height+padY*2)});
       }
       function fitDateLabelRects(groups){
-        groups.each(function(){
-          const g=d3.select(this),node=g.select(".date-text").node();
-          if(!node)return;
-          const bb=node.getBBox();
-          const left=-14,right=bb.x+bb.width+8,top=Math.min(-11,bb.y-5),bottom=Math.max(11,bb.y+bb.height+5);
-          g.select(".date-card").attr("x",left).attr("y",top).attr("width",right-left).attr("height",bottom-top);
-        });
+        groups.each(function(){const g=d3.select(this),node=g.select(".date-text").node();if(!node)return;const bb=node.getBBox();const left=-14,right=bb.x+bb.width+8,top=Math.min(-11,bb.y-5),bottom=Math.max(11,bb.y+bb.height+5);g.select(".date-card").attr("x",left).attr("y",top).attr("width",right-left).attr("height",bottom-top)});
       }
-      function dragstarted(ev,d){if(!ev.active)simulation.alphaTarget(.25).restart();d.fx=d.x;d.fy=d.y}
-      function dragged(ev,d){d.fx=ev.x;d.fy=ev.y}
-      function dragended(ev,d){if(!ev.active)simulation.alphaTarget(0);d.fx=ev.x;d.fy=ev.y}
+      function dragstarted(ev){if(ev.sourceEvent)ev.sourceEvent.stopPropagation()}
+      function dragged(ev,d){d.x=Math.max(35,Math.min(w-35,ev.x));d.y=Math.max(35,Math.min(h-35,ev.y));updatePositions()}
+      function dragended(ev,d){edits.nodePositions=edits.nodePositions||{};edits.nodePositions[d.id]={x:d.x/w,y:d.y/h};saveStorage()}
     }
     function edgeColor(d){if(/DNI|Identidad|Titular/i.test(d.relation))return "#c16a06";if(/Operadora/i.test(d.relation))return "#227989";return "#397d5d"}
     function edgeDateLabel(e){const dates=(e.dates||[]).filter(Boolean);if(!dates.length)return "SIN FECHA REGISTRADA";return dates.length===1?dates[0]:`${dates[0]}  (+${dates.length-1} fecha${dates.length>2?"s":""})`}
@@ -467,7 +493,7 @@
     }
     function resolveNodeLabel(n){const id=typeof n==="object"?n.id:n;return graphData.nodes.find(x=>x.id===id)?.label||id}
 
-    function centerGraph(animate=true){if(!svg||!rootG||!filteredGraph.nodes.length)return;const bounds=rootG.node().getBBox();const w=$("graphWrap").clientWidth,h=$("graphWrap").clientHeight;const scale=Math.max(.25,Math.min(1.35,.86/Math.max(bounds.width/w,bounds.height/h)));const tx=w/2-scale*(bounds.x+bounds.width/2),ty=h/2-scale*(bounds.y+bounds.height/2);const t=d3.zoomIdentity.translate(tx,ty).scale(scale);(animate?svg.transition().duration(450):svg).call(zoomBehavior.transform,t)}
+    function centerGraph(animate=true){if(!svg||!rootG||!filteredGraph.nodes.length)return;const bounds=rootG.node().getBBox();const w=$("graphWrap").clientWidth,h=$("graphWrap").clientHeight;const scale=Math.max(.28,Math.min(1.42,.94/Math.max(bounds.width/w,bounds.height/h)));const tx=w/2-scale*(bounds.x+bounds.width/2),ty=h/2-scale*(bounds.y+bounds.height/2);const t=d3.zoomIdentity.translate(tx,ty).scale(scale);(animate?svg.transition().duration(450):svg).call(zoomBehavior.transform,t)}
     function focusNode(id){const n=filteredGraph.nodes.find(x=>x.id===id);if(!n)return;objectiveId=id;selectItem("node",id);const w=$("graphWrap").clientWidth,h=$("graphWrap").clientHeight;svg.transition().duration(500).call(zoomBehavior.transform,d3.zoomIdentity.translate(w/2-n.x*1.35,h/2-n.y*1.35).scale(1.35))}
     function searchGraph(){const q=clean($("graphSearch").value||$("mainSearch").value).toLowerCase();if(!q)return toast("Escribe un dato para buscar.");const n=graphData.nodes.find(x=>x.label.toLowerCase().includes(q)||x.id.toLowerCase().includes(q));if(!n)return toast("No se encontró la entidad.");if(!enabledTypes.has(n.type)){enabledTypes.add(n.type);syncTypeButtons()}graphMode="all";syncModeButtons();applyGraphFilters();setTimeout(()=>focusNode(n.id),250)}
 
@@ -618,39 +644,250 @@
     }
 
     function downloadBlob(content,name,type="text/plain;charset=utf-8"){const b=content instanceof Blob?content:new Blob([content],{type}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),500)}
-    function exportCSV(){const headers=["imei","numero","fecha_hora","operadora","dni","nombre","tipo","observacion"];const csv=[headers.join(","),...records.map(r=>headers.map(h=>`"${clean(r[h]).replace(/"/g,'""')}"`).join(","))].join("\n");downloadBlob("\ufeff"+csv,`divincri_vinculaciones_${new Date().toISOString().slice(0,10)}.csv`,"text/csv;charset=utf-8")}
+    function exportCSV(){const headers=["imei","numero","fecha_hora","operadora","dni","nombre","tipo","observacion","source"];const csv=[headers.join(","),...records.map(r=>headers.map(h=>`"${clean(r[h]).replace(/"/g,'""')}"`).join(","))].join("\n");downloadBlob("\ufeff"+csv,`divincri_vinculaciones_${new Date().toISOString().slice(0,10)}.csv`,"text/csv;charset=utf-8")}
     function exportJSON(){downloadBlob(JSON.stringify({sistema:"DIVINCRI La Libertad",fechaExportacion:new Date().toISOString(),records,edits},null,2),`divincri_respaldo_${new Date().toISOString().slice(0,10)}.json`,"application/json")}
+
+    function unique(values){return [...new Set(values.map(clean).filter(Boolean))]}
+    function modeValue(values){const counts=new Map();values.map(clean).filter(Boolean).forEach(v=>counts.set(v,(counts.get(v)||0)+1));return [...counts.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||""}
+    function objectiveNumber(){
+      const focused=objectiveId?graphData.nodes.find(n=>n.id===objectiveId):null;
+      if(focused?.type==="numero")return digits(focused.label);
+      const typed=digits($("mainSearch")?.value||"");
+      if(typed&&records.some(r=>r.numero===typed))return typed;
+      const byFrequency=new Map();records.forEach(r=>{if(r.numero)byFrequency.set(r.numero,(byFrequency.get(r.numero)||0)+1)});
+      return [...byFrequency.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||"";
+    }
+    function analyzeObjective(){
+      const objective=objectiveNumber();
+      const direct=objective?records.filter(r=>r.numero===objective):[];
+      const seed=direct.length?direct:records;
+      const imeis=new Set(unique(seed.map(r=>r.imei)));
+      const dnis=new Set(unique(seed.map(r=>r.dni)));
+      const related=records.filter(r=>!objective||r.numero===objective||(r.imei&&imeis.has(r.imei))||(r.dni&&dnis.has(r.dni)));
+      const principalDni=modeValue(direct.map(r=>r.dni));
+      const principalName=modeValue(direct.filter(r=>!principalDni||r.dni===principalDni).map(r=>r.nombre))||modeValue(direct.map(r=>r.nombre));
+      const imeiStats=unique(direct.map(r=>r.imei)).map(imei=>{
+        const rows=records.filter(r=>r.imei===imei),numbers=unique(rows.map(r=>r.numero)),docs=unique(rows.map(r=>r.dni));
+        return{imei,rows,numbers,docs,operators:unique(rows.map(r=>r.operadora)),dates:unique(rows.map(r=>r.fecha_hora)).sort((a,b)=>dateSortValue(a)-dateSortValue(b))};
+      }).sort((a,b)=>b.numbers.length-a.numbers.length||b.rows.length-a.rows.length);
+      const personMap=new Map();
+      related.forEach(r=>{const key=r.dni||r.nombre;if(!key)return;if(!personMap.has(key))personMap.set(key,{dni:r.dni,nombre:r.nombre,numeros:new Set(),imeis:new Set(),operadoras:new Set(),fechas:new Set(),eventos:0});const p=personMap.get(key);if(r.numero)p.numeros.add(r.numero);if(r.imei)p.imeis.add(r.imei);if(r.operadora)p.operadoras.add(r.operadora);if(r.fecha_hora)p.fechas.add(r.fecha_hora);p.eventos++});
+      const persons=[...personMap.values()].map(p=>({...p,numeros:[...p.numeros],imeis:[...p.imeis],operadoras:[...p.operadoras],fechas:[...p.fechas]})).sort((a,b)=>(b.dni===principalDni)-(a.dni===principalDni)||b.eventos-a.eventos);
+      return{
+        objective,direct,related,principalDni,principalName,
+        imeis:unique(direct.map(r=>r.imei)),dnis:unique(direct.map(r=>r.dni)),names:unique(direct.map(r=>r.nombre)),operators:unique(direct.map(r=>r.operadora)),
+        relatedNumbers:unique(related.map(r=>r.numero)).filter(n=>n!==objective),imeiStats,persons,
+        firstDate:unique(related.map(r=>r.fecha_hora)).sort((a,b)=>dateSortValue(a)-dateSortValue(b))[0]||"",
+        lastDate:unique(related.map(r=>r.fecha_hora)).sort((a,b)=>dateSortValue(a)-dateSortValue(b)).slice(-1)[0]||""
+      };
+    }
+
+    function exportExcel(){
+      if(!records.length)return toast("Carga información antes de descargar el Excel.");
+      if(!window.XLSX)return toast("No se pudo cargar el generador de Excel.");
+      const a=analyzeObjective(),wb=XLSX.utils.book_new(),today=new Date().toLocaleString("es-PE");
+      const summary=[
+        ["INFORME / EXPORTACIÓN DIVINCRI LA LIBERTAD",""],
+        ["Fecha de exportación",today],["Número objetivo",a.objective||"No definido"],["DNI principal observado",a.principalDni||"No determinado"],["Nombre principal observado",a.principalName||"No determinado"],
+        ["Registros totales",records.length],["Registros directos del objetivo",a.direct.length],["Entidades",graphData.nodes.length],["Vínculos",graphData.edges.length],["IMEI del objetivo",a.imeis.join(" / ")],["Números relacionados",a.relatedNumbers.join(" / ")],
+        ["Advertencia","Las relaciones son indicios construidos con la información cargada y requieren corroboración con fuentes oficiales."]
+      ];
+      const wsSummary=XLSX.utils.aoa_to_sheet(summary);wsSummary["!cols"]=[{wch:34},{wch:100}];
+      XLSX.utils.book_append_sheet(wb,wsSummary,"Resumen");
+
+      const ordered=[...records].sort((x,y)=>dateSortValue(x.fecha_hora)-dateSortValue(y.fecha_hora));
+      const wsRecords=XLSX.utils.json_to_sheet(ordered.map((r,i)=>({N:i+1,Numero:r.numero,IMEI:r.imei,DNI:r.dni,Nombre:r.nombre,Operadora:r.operadora,Relacion:r.tipo,Fecha_Hora:r.fecha_hora,Observacion:r.observacion,Fuente:r.source})));
+      wsRecords["!cols"]=[{wch:7},{wch:16},{wch:20},{wch:13},{wch:34},{wch:28},{wch:28},{wch:22},{wch:52},{wch:30}];wsRecords["!autofilter"]={ref:wsRecords["!ref"]};wsRecords["!freeze"]={xSplit:0,ySplit:1};
+      XLSX.utils.book_append_sheet(wb,wsRecords,"Registros");
+
+      const wsEntities=XLSX.utils.json_to_sheet(graphData.nodes.map((n,i)=>({N:i+1,Tipo:n.type,Valor:n.label,Vinculos:n.degree,Fechas:(n.dates||[]).join(" | "),Nota:n.note||"",Es_objetivo:n.id===objectiveId?"SI":"NO"})));
+      wsEntities["!cols"]=[{wch:7},{wch:15},{wch:38},{wch:12},{wch:55},{wch:45},{wch:13}];wsEntities["!autofilter"]={ref:wsEntities["!ref"]};
+      XLSX.utils.book_append_sheet(wb,wsEntities,"Entidades");
+
+      const wsLinks=XLSX.utils.json_to_sheet(graphData.edges.map((e,i)=>({N:i+1,Origen:resolveNodeLabel(e.source),Destino:resolveNodeLabel(e.target),Relacion:e.relation,Fechas:(e.dates||[]).join(" | "),Coincidencias:e.count||1,Observaciones:(e.notes||[]).join(" | ")||e.note||""})));
+      wsLinks["!cols"]=[{wch:7},{wch:34},{wch:34},{wch:30},{wch:55},{wch:14},{wch:55}];wsLinks["!autofilter"]={ref:wsLinks["!ref"]};
+      XLSX.utils.book_append_sheet(wb,wsLinks,"Vinculos");
+
+      const wsTimeline=XLSX.utils.json_to_sheet(ordered.map((r,i)=>({N:i+1,Fecha_Hora:r.fecha_hora,Numero:r.numero,IMEI:r.imei,DNI:r.dni,Nombre:r.nombre,Operadora:r.operadora,Relacion:r.tipo,Observacion:r.observacion})));
+      wsTimeline["!cols"]=[{wch:7},{wch:22},{wch:16},{wch:20},{wch:13},{wch:34},{wch:28},{wch:28},{wch:52}];wsTimeline["!autofilter"]={ref:wsTimeline["!ref"]};
+      XLSX.utils.book_append_sheet(wb,wsTimeline,"Linea_de_tiempo");
+
+      if(edits.annotations?.length){const wsNotes=XLSX.utils.json_to_sheet(edits.annotations.map((n,i)=>({N:i+1,Texto:n.text,Posicion_X:n.x,Posicion_Y:n.y})));wsNotes["!cols"]=[{wch:7},{wch:80},{wch:16},{wch:16}];XLSX.utils.book_append_sheet(wb,wsNotes,"Anotaciones")}
+      const safe=(a.objective||"general").replace(/[^0-9A-Za-z_-]/g,"");
+      XLSX.writeFile(wb,`DIVINCRI_analisis_${safe}_${new Date().toISOString().slice(0,10)}.xlsx`,{compression:true});
+      toast("Excel completo generado en hojas ordenadas.");
+    }
+
+    function graphPngDataUrl(){
+      return new Promise(resolve=>{
+        try{
+          if(!svg?.node())return resolve("");
+          const clone=svg.node().cloneNode(true),width=$("graphWrap").clientWidth||1100,height=$("graphWrap").clientHeight||700;
+          clone.setAttribute("xmlns","http://www.w3.org/2000/svg");clone.setAttribute("width",width);clone.setAttribute("height",height);
+          const xml=new XMLSerializer().serializeToString(clone),blob=new Blob([xml],{type:"image/svg+xml;charset=utf-8"}),url=URL.createObjectURL(blob),img=new Image();
+          img.onload=()=>{const canvas=document.createElement("canvas"),scale=1.7;canvas.width=width*scale;canvas.height=height*scale;const ctx=canvas.getContext("2d");ctx.fillStyle="#ffffff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);resolve(canvas.toDataURL("image/png",.94))};
+          img.onerror=()=>{URL.revokeObjectURL(url);resolve("")};img.src=url;
+        }catch(e){console.warn(e);resolve("")}
+      });
+    }
+
     async function exportPDF(){
       if(!records.length)return toast("Carga información antes de generar el informe PDF.");
-      const {jsPDF}=window.jspdf||{};if(!jsPDF||!window.jspdf)return window.print();
-      const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4",compress:true});
-      const title="ÁREA DE ANÁLISIS DE INTELIGENCIA - DIVINCRI LA LIBERTAD";
-      const subtitle=`Reporte de vinculaciones — ${reportDateTime()}`;
-      const pageWidth=doc.internal.pageSize.getWidth(),pageHeight=doc.internal.pageSize.getHeight();
-      const drawHeader=()=>{
-        doc.setTextColor(25,31,27);doc.setFont("helvetica","normal");doc.setFontSize(13.5);doc.text(title,10,14);
-        doc.setTextColor(50,50,50);doc.setFontSize(8.5);doc.text(subtitle,10,22);
-      };
-      doc.setProperties({title:"Informe DIVINCRI - Vinculaciones",subject:"Reporte de vinculaciones",author:"Área de Análisis de Inteligencia - DIVINCRI La Libertad",creator:"Sistema de análisis relacional DIVINCRI"});
-      doc.autoTable({
-        startY:30,
-        margin:{top:30,left:10,right:10,bottom:12},
-        head:[["N°","Número","IMEI","DNI","Nombre","Operadora","Relación","Fecha"]],
-        body:records.map((r,i)=>[String(i+1),clean(r.numero),clean(r.imei),clean(r.dni),clean(r.nombre),clean(r.operadora),clean(r.tipo)||"Vinculación",clean(r.fecha_hora)]),
-        theme:"striped",
-        showHead:"everyPage",
-        styles:{font:"helvetica",fontStyle:"normal",fontSize:6.2,cellPadding:{top:3,bottom:3,left:1.7,right:1.7},textColor:[76,76,76],lineWidth:0,overflow:"linebreak",valign:"middle"},
-        headStyles:{fillColor:[6,71,42],textColor:[255,255,255],fontStyle:"bold",fontSize:6.4,minCellHeight:10.5,halign:"center"},
-        bodyStyles:{minCellHeight:10,fillColor:[255,255,255]},
-        alternateRowStyles:{fillColor:[242,242,242]},
-        columnStyles:{0:{cellWidth:10,halign:"center"},1:{cellWidth:28},2:{cellWidth:45},3:{cellWidth:28},4:{cellWidth:48},5:{cellWidth:32},6:{cellWidth:35},7:{cellWidth:51}},
-        didDrawPage:data=>{
-          drawHeader();
-          doc.setTextColor(120,126,122);doc.setFontSize(6.5);doc.text(`Página ${data.pageNumber}`,pageWidth-10,pageHeight-5,{align:"right"});
-        }
+      const {jsPDF}=window.jspdf||{};if(!jsPDF)return window.print();
+      const a=analyzeObjective(),objective=a.objective||"NO DEFINIDO",navy=[33,61,105],red=[190,20,28],beige=[255,244,205],light=[242,242,242],gray=[95,100,98];
+      const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4",compress:true});
+      const pageW=()=>doc.internal.pageSize.getWidth(),pageH=()=>doc.internal.pageSize.getHeight();
+      let y=22;
+      const setBody=()=>{doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(25,25,25)};
+      const addPage=(orientation="portrait")=>{doc.addPage("a4",orientation);y=22};
+      const heading=(text,size=18)=>{doc.setFont("helvetica","bold");doc.setFontSize(size);doc.setTextColor(...navy);doc.text(text,14,y);y+=size*.48+5};
+      const subheading=(text,size=12.5)=>{if(y>270)addPage();doc.setFont("helvetica","bold");doc.setFontSize(size);doc.setTextColor(...navy);doc.text(text,14,y);y+=7};
+      const redLabel=text=>{doc.setFont("helvetica","bold");doc.setFontSize(10.5);doc.setTextColor(...red);doc.text(text,14,y);y+=5};
+      const paragraph=(text,width=182,space=4)=>{setBody();const lines=doc.splitTextToSize(clean(text),width);doc.text(lines,14,y);y+=lines.length*4.7+space};
+      const bullets=(items,width=174)=>{setBody();items.filter(Boolean).forEach(item=>{if(y>277)addPage();const lines=doc.splitTextToSize(clean(item),width);doc.text("•",15,y);doc.text(lines,20,y);y+=lines.length*4.6+2})};
+      const table=(head,body,opts={})=>{doc.autoTable({startY:y,margin:{left:14,right:14,top:20,bottom:14},head:[head],body,theme:"grid",showHead:"everyPage",styles:{font:"helvetica",fontSize:opts.fontSize||7.4,cellPadding:1.35,textColor:[28,28,28],lineColor:[40,40,40],lineWidth:.18,overflow:"linebreak",valign:"middle"},headStyles:{fillColor:navy,textColor:[255,255,255],fontStyle:"bold",halign:"center"},bodyStyles:{fillColor:[255,255,255]},alternateRowStyles:{fillColor:opts.alternate===false?[255,255,255]:light},columnStyles:opts.columnStyles||{},didParseCell:data=>{if(opts.highlight&&data.section==="body"&&opts.highlight(data.row.raw,data.row.index))data.cell.styles.fillColor=beige}});y=doc.lastAutoTable.finalY+5};
+      const safeRelation=(rows)=>rows.map((r,i)=>[String(i+1),r.numero||"-",r.imei||"-",r.dni||"-",r.nombre||"-",r.operadora||"-",r.fecha_hora||"-"]);
+
+      doc.setProperties({title:`Informe de análisis de inteligencia - ${objective}`,subject:"Análisis relacional técnico-administrativo",author:"Área de Análisis de Inteligencia - DIVINCRI La Libertad",creator:"Sistema de análisis relacional DIVINCRI"});
+
+      // PÁGINA 1 - CARÁTULA
+      doc.setFont("helvetica","bold");doc.setTextColor(...navy);doc.setFontSize(19);doc.text("INFORME DE ANÁLISIS DE INTELIGENCIA",pageW()/2,28,{align:"center"});
+      doc.setFontSize(15.5);const caseLines=doc.splitTextToSize(`CASO: ANÁLISIS DE RELACIÓN E IDENTIFICACIÓN DEL NÚMERO +51 ${objective}`,176);doc.text(caseLines,pageW()/2,44,{align:"center"});
+      doc.setFont("helvetica","italic");doc.setFontSize(11);doc.setTextColor(35,35,35);doc.text("Vinculación por titularidad, IMEI, líneas asociadas y evidencia cargada",pageW()/2,66,{align:"center"});
+      doc.setFont("helvetica","bold");doc.setFontSize(12);doc.setTextColor(...red);doc.text("CLASIFICACIÓN: RESERVADO",pageW()/2,78,{align:"center"});
+      doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(30,30,30);doc.text(`Fecha de elaboración: ${new Date().toLocaleDateString("es-PE",{day:"2-digit",month:"long",year:"numeric"})}`,pageW()/2,90,{align:"center"});
+      y=101;
+      table(["Campo","Dato"],[
+        ["Objetivo",`+51 ${objective}`],["Tipo de análisis","Relacional / técnico-administrativo"],["Fuentes base",unique(records.map(r=>r.source)).join("; ")||"Información cargada en el sistema"],
+        ["Alcance","Identificar relaciones técnicas y administrativas observadas en los registros cargados."],["Limitación","La titularidad, el IMEI o una coincidencia documental no prueban por sí solos autoría material; requieren corroboración oficial."]
+      ],{fontSize:8,columnStyles:{0:{cellWidth:54,fontStyle:"bold"},1:{cellWidth:128}}});
+
+      // PÁGINA 2 - RESUMEN EJECUTIVO
+      addPage();heading("I. RESUMEN EJECUTIVO");
+      paragraph(`El presente informe organiza el análisis técnico y relacional del número objetivo +51 ${objective}. La información cargada registra ${a.direct.length} evento(s) directo(s) del objetivo, ${a.imeis.length} IMEI asociado(s), ${a.dnis.length} documento(s) observado(s) y ${a.relatedNumbers.length} número(s) relacionado(s) por coincidencias técnicas o administrativas.`);
+      paragraph(a.principalDni?`La identificación administrativa con mayor repetición en los eventos directos corresponde al DNI ${a.principalDni}${a.principalName?`, registrado como ${a.principalName}`:""}. Esta asociación debe validarse con la operadora, contrato, biometría, historial de titularidad y datos de uso real.`:"No se obtuvo un DNI principal repetido en los registros directos del objetivo.");
+      redLabel("Conclusión preliminar:");
+      bullets([
+        a.direct.length?`El número objetivo aparece en ${a.direct.length} registro(s) directo(s) dentro de la base analizada.`:"No se hallaron registros directos del número objetivo; el análisis se construye sobre la base completa.",
+        a.imeis.length?`Se observaron los IMEI ${a.imeis.join(" y ")}.`:"No se identificó IMEI asociado al objetivo.",
+        a.imeiStats[0]?.imei?`El IMEI ${a.imeiStats[0].imei} presenta la mayor expansión técnica, con ${a.imeiStats[0].numbers.length} número(s) y ${a.imeiStats[0].docs.length} documento(s) observados.`:"No existe un IMEI con expansión suficiente para priorizar.",
+        a.relatedNumbers.length?`Los números relacionados por coincidencia técnica son: ${a.relatedNumbers.join(", ")}.`:"No se detectaron números adicionales relacionados.",
+        "Las coincidencias deben tratarse como indicios y corroborarse con CDR, IMSI, ICCID, celdas, contratos y registros oficiales."
+      ]);
+      table(["Indicador","Resultado"],[
+        ["Número objetivo",`+51 ${objective}`],["Documento principal observado",a.principalDni?`DNI ${a.principalDni}`:"No determinado"],["Nombre asociado",a.principalName||"No determinado"],
+        ["IMEI asociados",a.imeis.join(" / ")||"No identificados"],["Eventos directos",String(a.direct.length)],["Números relacionados",String(a.relatedNumbers.length)],
+        ["Periodo observado",a.firstDate&&a.lastDate?`${a.firstDate} - ${a.lastDate}`:"Sin fechas suficientes"],["Nivel de relación","Indicio técnico-administrativo sujeto a corroboración"]
+      ],{fontSize:7.5,columnStyles:{0:{cellWidth:62,fontStyle:"bold"},1:{cellWidth:120}}});
+
+      // PÁGINA 3 - PERSONAS / DOCUMENTOS
+      addPage();heading("II. PERSONAS / DOCUMENTOS IDENTIFICADOS EN LA RED TÉCNICA",16);
+      const people=a.persons.slice(0,3);
+      if(!people.length)paragraph("No se encontraron nombres o documentos personales suficientes para desarrollar esta sección.");
+      people.forEach((p,i)=>{
+        subheading(`2.${i+1} ${(p.nombre||"PERSONA NO IDENTIFICADA").toUpperCase()} - ${p.dni===a.principalDni?"ASOCIACIÓN PRINCIPAL":"RELACIONADO EN LOS REGISTROS"}`,11.5);
+        table(["Campo","Dato"],[
+          ["DNI",p.dni||"No registrado"],["Nombre",p.nombre||"No registrado"],["Números asociados",p.numeros.join(" / ")||"No registrados"],["IMEI relacionados",p.imeis.join(" / ")||"No registrados"],["Operadoras",p.operadoras.join(" / ")||"No registradas"],["Eventos observados",String(p.eventos)]
+        ],{fontSize:7.1,columnStyles:{0:{cellWidth:50,fontStyle:"bold"},1:{cellWidth:132}},highlight:()=>p.dni===a.principalDni});
+        redLabel("FUNDAMENTO DE VINCULACIÓN:");
+        bullets([
+          `La relación se construye a partir de ${p.eventos} registro(s) cargado(s) que contienen el documento, nombre, número o IMEI indicado.`,
+          p.dni===a.principalDni?`El DNI ${p.dni} es el documento que más se repite en los eventos directos del objetivo.`:`La relación es indirecta o complementaria y no equivale a titularidad vigente del objetivo.`,
+          "Se recomienda validar identidad, vigencia, contrato, biometría y uso real mediante fuentes oficiales."
+        ],170);
       });
-      doc.save(`informe_divincri_${new Date().toISOString().slice(0,10)}.pdf`);
-      toast("Informe PDF generado correctamente.");
+
+      // PÁGINA 4 - LÍNEAS E IMEI
+      addPage();heading("III. LÍNEAS TELEFÓNICAS E IMEI RELACIONADOS",16);
+      subheading(`3.1 Número objetivo: +51 ${objective}`);
+      table(["Campo","Dato"],[
+        ["Documento principal observado",a.principalDni?`DNI ${a.principalDni}${a.principalName?` - ${a.principalName}`:""}`:"No determinado"],["IMEI asociados",a.imeis.join(" / ")||"No identificados"],["Operadoras observadas",a.operators.join(" / ")||"No registradas"],["Cantidad de vinculaciones directas",String(a.direct.length)]
+      ],{fontSize:7.4,columnStyles:{0:{cellWidth:62,fontStyle:"bold"},1:{cellWidth:120}}});
+      a.imeiStats.slice(0,2).forEach((st,i)=>{
+        subheading(`3.${i+2} IMEI ${st.imei} - ${i===0?"ESLABÓN TÉCNICO PRINCIPAL":"ESLABÓN TÉCNICO COMPLEMENTARIO"}`,11.5);
+        table(["Número","DNI abonado","Fecha/hora","Operadora","Lectura"],st.rows.slice(0,14).sort((x,y)=>dateSortValue(x.fecha_hora)-dateSortValue(y.fecha_hora)).map(r=>[r.numero||"-",r.dni||"-",r.fecha_hora||"-",r.operadora||"-",r.numero===objective?"Objetivo":"Registro relacionado"]),{fontSize:6.8,columnStyles:{0:{cellWidth:31},1:{cellWidth:29},2:{cellWidth:42},3:{cellWidth:43},4:{cellWidth:37}},highlight:row=>row[0]===objective});
+        redLabel(`CONCLUSIÓN DEL IMEI ${st.imei}:`);
+        paragraph(`Este IMEI reúne ${st.rows.length} evento(s), ${st.numbers.length} número(s), ${st.docs.length} documento(s) y ${st.operators.length} operadora(s). La presencia de distintos abonados o líneas puede responder a cambio de SIM, préstamo, reventa, circulación del equipo, errores de registro o posible duplicidad; debe verificarse con IMSI, ICCID, celdas y logs por fecha.`,182,3);
+      });
+
+      // PÁGINA 5 - CADENA DE EVIDENCIA
+      addPage();heading("IV. CADENA DE EVIDENCIA: TITULARIDAD Y VINCULACIÓN DEL OBJETIVO",15.5);
+      subheading(`4.1 Eventos directos del número ${objective}`);
+      table(["Item","IMEI","Fecha/hora","Operadora","Documento","Tipo"],a.direct.sort((x,y)=>dateSortValue(x.fecha_hora)-dateSortValue(y.fecha_hora)).map((r,i)=>[String(i+1),r.imei||"-",r.fecha_hora||"-",r.operadora||"-",r.dni?`DNI ${r.dni}`:"-",r.tipo||"Vinculación"]),{fontSize:6.7,columnStyles:{0:{cellWidth:12},1:{cellWidth:39},2:{cellWidth:38},3:{cellWidth:39},4:{cellWidth:29},5:{cellWidth:25}},highlight:()=>true});
+      paragraph(a.direct.length?`Los eventos directos del objetivo mantienen ${a.dnis.length===1?"un solo documento observado":"más de un documento observado"}. Esta lectura reduce o incrementa la ambigüedad administrativa, pero no reemplaza la verificación de uso efectivo.`:"No se identificaron eventos directos suficientes para construir una cadena del objetivo.");
+      subheading("4.2 Matriz de relación por fuerza indiciaria");
+      const matrix=[];
+      if(a.principalDni)matrix.push([`${objective} - DNI ${a.principalDni}`,a.direct.filter(r=>r.dni===a.principalDni).length>=2?"ALTA":"MEDIA","Repetición en eventos directos","Solicitar contrato, biometría, portabilidad y reposiciones SIM"]);
+      a.imeiStats.forEach(st=>matrix.push([`${objective} - IMEI ${st.imei}`,st.rows.filter(r=>r.numero===objective).length>=2?"ALTA":"MEDIA",`${st.rows.filter(r=>r.numero===objective).length} evento(s) directo(s) y ${st.numbers.length} número(s) en el IMEI`,"Solicitar IMSI/ICCID/celdas por fecha"]));
+      a.relatedNumbers.slice(0,4).forEach(n=>matrix.push([`${n} - ${objective}`,"MEDIA","Coincidencia por IMEI o documento compartido","Confirmar mismo equipo físico, titularidad y celdas"]));
+      table(["Relación","Fuerza","Motivo","Acción de corroboración"],matrix,{fontSize:6.8,columnStyles:{0:{cellWidth:43},1:{cellWidth:22,fontStyle:"bold"},2:{cellWidth:57},3:{cellWidth:60}}});
+
+      // PÁGINA 6 - GRAFO
+      addPage();heading("V. MAPA RELACIONAL",16);
+      const graphImage=await graphPngDataUrl();
+      if(graphImage){doc.addImage(graphImage,"PNG",15,y,180,108,undefined,"FAST");y+=114}else paragraph("No fue posible incorporar la captura del grafo. El mapa permanece disponible en la vista gráfica del sistema.");
+      doc.setFont("helvetica","italic");doc.setFontSize(8.5);doc.setTextColor(35,35,35);doc.text(`Figura 1. Relación central del número objetivo ${objective} según los datos cargados.`,pageW()/2,y,{align:"center"});y+=10;
+      subheading("5.1 Lectura del grafo");
+      bullets([
+        `El nodo rojo corresponde a la entidad enfocada u objetivo ${objective}.`,
+        "Los nodos de número, IMEI, DNI, persona y operadora representan entidades distintas; las líneas muestran la relación y la fecha registrada.",
+        a.imeiStats[0]?.imei?`El IMEI ${a.imeiStats[0].imei} concentra la mayor expansión técnica de la red.`:"No se identificó un IMEI principal.",
+        a.relatedNumbers.length?`Los números ${a.relatedNumbers.join(", ")} son nodos de expansión y no deben considerarse autores por sí mismos.`:"No se detectaron números adicionales de expansión.",
+        "El gráfico es orientativo y debe leerse junto con los registros originales y los requerimientos oficiales."
+      ]);
+
+      // PÁGINA 7 - HIPÓTESIS
+      addPage();heading("VI. ANÁLISIS DE HIPÓTESIS Y MODUS TÉCNICO",16);
+      subheading("6.1 Hipótesis principal");
+      paragraph(a.principalDni?`El número objetivo ${objective} presenta una asociación administrativa reiterada con el DNI ${a.principalDni}${a.principalName?` / ${a.principalName}`:""}, y una asociación técnica con ${a.imeis.length} IMEI. El patrón permite orientar diligencias, pero no acredita por sí solo quién utilizó físicamente la línea o el equipo en cada fecha.`:`El número objetivo ${objective} presenta relaciones técnicas en la base, pero no existe un documento principal suficientemente reiterado para formular una identificación administrativa fuerte.`);
+      subheading("6.2 Hipótesis alternativas que deben descartarse");
+      bullets([
+        "Uso real por el titular administrativo en las fechas señaladas.",
+        "Préstamo o circulación del equipo entre varios usuarios o líneas.",
+        "Reventa, transferencia informal, cambio de SIM o portabilidad.",
+        "Duplicidad o clonación de IMEI, o inconsistencias en la fuente de datos.",
+        "Registro histórico no vigente que no corresponde al usuario actual."
+      ]);
+      subheading("6.3 Interpretación operativa");
+      paragraph(`La relación más sólida surge de la convergencia entre repetición documental, eventos directos del número y coincidencias de IMEI. El periodo observado va de ${a.firstDate||"fecha no determinada"} a ${a.lastDate||"fecha no determinada"}. Para cerrar atribución se requieren datos primarios de operadora y contraste temporal de celdas, IMSI e ICCID.`);
+      heading("VII. ACCIONES INMEDIATAS RECOMENDADAS",15.5);
+      table(["Prioridad","Entidad","Dato base","Requerimiento","Finalidad"],[
+        ["1","Operadora móvil",objective,"Titularidad histórica, contrato, biometría, portabilidad, reposiciones SIM, IMSI, ICCID, CDR y celdas.","Confirmar uso real y titularidad vigente."],
+        ["2","Operadora móvil",a.imeiStats[0]?.imei||"IMEI principal","Histórico de líneas, IMSI/ICCID, fechas y celdas por cada evento.","Reconstruir circulación del equipo."],
+        ["3","Fuente oficial",a.dnis.join(" / ")||"Documentos observados","Validación/certificación de identidad y vigencia.","Evitar depender solo de capturas o bases derivadas."],
+        ["4","Análisis de inteligencia","Grafo y Excel generado","Importar nodos, revisar fechas y marcar fuerza indiciaria.","Visualizar la red y priorizar diligencias."]
+      ],{fontSize:6.4,columnStyles:{0:{cellWidth:15},1:{cellWidth:31},2:{cellWidth:34},3:{cellWidth:66},4:{cellWidth:36}},highlight:row=>row[0]==="1"||row[0]==="2"});
+
+      // PÁGINA 8 - CONCLUSIONES Y ANEXO I2
+      addPage();heading("VIII. CONCLUSIONES",17);
+      const conclusions=[
+        `PRIMERA: El número objetivo ${objective} registra ${a.direct.length} evento(s) directo(s) en la información cargada.`,
+        a.principalDni?`SEGUNDA: El DNI ${a.principalDni}${a.principalName?` / ${a.principalName}`:""} es la asociación administrativa más repetida en los eventos del objetivo.`:"SEGUNDA: No se obtuvo un documento principal suficientemente repetido para establecer una asociación administrativa fuerte.",
+        a.imeiStats[0]?.imei?`TERCERA: El IMEI ${a.imeiStats[0].imei} constituye el eslabón técnico con mayor expansión, al conectar ${a.imeiStats[0].numbers.length} número(s) y ${a.imeiStats[0].docs.length} documento(s).`:"TERCERA: No se identificó un IMEI principal con expansión suficiente.",
+        a.relatedNumbers.length?`CUARTA: Los números ${a.relatedNumbers.join(", ")} son nodos de expansión por coincidencias técnicas o administrativas y requieren confirmación individual.`:"CUARTA: No se detectaron números adicionales relacionados en la base.",
+        "QUINTA: La evidencia permite orientar diligencias e identificación preliminar, pero la atribución de autoría requiere requerimientos oficiales y validación de fuentes primarias."
+      ];
+      conclusions.forEach(c=>paragraph(c,182,2));
+      heading("IX. ANEXO: DATOS PARA CARGA EN IBM i2",15.5);
+      const i2Rows=[];
+      if(objective)i2Rows.push(["Teléfono",objective,`TEL ${objective}`,"OBJETIVO"]);
+      a.persons.slice(0,8).forEach(p=>i2Rows.push(["Persona / DNI",p.dni||p.nombre,p.nombre||`DNI ${p.dni}`,p.dni===a.principalDni?"Asociación principal":"Relacionado"]));
+      a.imeiStats.forEach((st,i)=>i2Rows.push(["IMEI",st.imei,`IMEI ${st.imei}`,i===0?"Eslabón principal":"Eslabón complementario"]));
+      a.relatedNumbers.slice(0,10).forEach(n=>i2Rows.push(["Teléfono",n,`TEL ${n}`,"Relacionado por coincidencia"]));
+      table(["Tipo nodo","Clave","Etiqueta sugerida","Rol"],i2Rows,{fontSize:7,columnStyles:{0:{cellWidth:36},1:{cellWidth:49},2:{cellWidth:53},3:{cellWidth:44}},highlight:row=>row[3]==="OBJETIVO"||row[3]==="Asociación principal"});
+
+      // ANEXO DETALLADO - toda la información relevante, en horizontal.
+      addPage("landscape");heading("ANEXO A. DETALLE COMPLETO DE REGISTROS",15.5);y=29;
+      doc.autoTable({startY:y,margin:{left:8,right:8,top:20,bottom:12},head:[["N°","Número","IMEI","DNI","Nombre","Operadora","Relación","Fecha/hora","Observación","Fuente"]],body:records.map((r,i)=>[String(i+1),r.numero||"",r.imei||"",r.dni||"",r.nombre||"",r.operadora||"",r.tipo||"",r.fecha_hora||"",r.observacion||"",r.source||""]),theme:"grid",showHead:"everyPage",styles:{font:"helvetica",fontSize:5.4,cellPadding:1,lineColor:[90,90,90],lineWidth:.12,overflow:"linebreak",valign:"middle"},headStyles:{fillColor:navy,textColor:[255,255,255],fontStyle:"bold",halign:"center"},alternateRowStyles:{fillColor:light},columnStyles:{0:{cellWidth:9},1:{cellWidth:21},2:{cellWidth:31},3:{cellWidth:19},4:{cellWidth:34},5:{cellWidth:30},6:{cellWidth:27},7:{cellWidth:31},8:{cellWidth:52},9:{cellWidth:35}},didParseCell:data=>{if(data.section==="body"&&data.row.raw[1]===objective)data.cell.styles.fillColor=beige}});
+
+      // Encabezado y pie para todas las páginas, incluso las creadas por AutoTable.
+      const total=doc.getNumberOfPages();
+      for(let p=1;p<=total;p++){
+        doc.setPage(p);const pw=pageW(),ph=pageH();doc.setFont("helvetica","italic");doc.setFontSize(7.2);doc.setTextColor(...gray);doc.text(`RESERVADO - Análisis técnico objetivo ${objective}`,pw-14,10,{align:"right"});doc.setFont("helvetica","normal");doc.setFontSize(7);doc.text(`Página ${p}`,pw/2,ph-6,{align:"center"});
+      }
+      const safe=objective.replace(/[^0-9A-Za-z_-]/g,"")||"general";
+      doc.save(`INFORME_ANALISIS_OBJETIVO_${safe}.pdf`);
+      toast("Informe PDF analítico generado correctamente.");
     }
     function exportPNG(){if(!svg)return;const clone=svg.node().cloneNode(true);clone.setAttribute("xmlns","http://www.w3.org/2000/svg");const xml=new XMLSerializer().serializeToString(clone),blob=new Blob([xml],{type:"image/svg+xml;charset=utf-8"}),url=URL.createObjectURL(blob),img=new Image();img.onload=()=>{const scale=2,canvas=document.createElement("canvas");canvas.width=$("graphWrap").clientWidth*scale;canvas.height=$("graphWrap").clientHeight*scale;const ctx=canvas.getContext("2d");ctx.fillStyle="#f8faf8";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);canvas.toBlob(b=>downloadBlob(b,`grafo_divincri_${new Date().toISOString().slice(0,10)}.png`,"image/png"))};img.src=url}
 
@@ -675,16 +912,16 @@
     $("btnSearch").onclick=()=>{const q=clean($("mainSearch").value).toLowerCase();if(!q)return toast("Escribe un dato para buscar.");const n=graphData.nodes.find(x=>x.label.toLowerCase().includes(q));if(!n)return toast("No se encontraron coincidencias.");objectiveId=n.id;graphMode="principal";syncModeButtons();setView("graphView");applyGraphFilters();setTimeout(()=>focusNode(n.id),250)};
     $("btnFull").onclick=()=>{objectiveId=null;graphMode="all";syncModeButtons();applyGraphFilters();setView("graphView")};
     $("btnAddFiles").onclick=()=>processFiles(false);$("btnReplaceFiles").onclick=()=>processFiles(true);$("btnPasteAdd").onclick=()=>pasteRows(false);$("btnPasteReplace").onclick=()=>pasteRows(true);$("btnManual").onclick=addManual;
-    $("btnCSV").onclick=exportCSV;$("btnJSON").onclick=exportJSON;$("btnPDF").onclick=exportPDF;$("btnClear").onclick=clearBase;
+    $("btnCSV").onclick=exportCSV;$("btnExcel").onclick=exportExcel;$("btnJSON").onclick=exportJSON;$("btnPDF").onclick=exportPDF;$("btnClear").onclick=clearBase;
     $("btnGraphSearch").onclick=searchGraph;$("graphSearch").onkeydown=e=>{if(e.key==="Enter")searchGraph()};
     document.querySelectorAll(".mode-btn").forEach(b=>b.onclick=()=>{graphMode=b.dataset.mode;syncModeButtons();applyGraphFilters()});
     document.querySelectorAll(".type-chip").forEach(b=>b.onclick=()=>{enabledTypes.has(b.dataset.type)?enabledTypes.delete(b.dataset.type):enabledTypes.add(b.dataset.type);syncTypeButtons();applyGraphFilters()});
     $("showDates").onchange=renderGraph;$("showLabels").onchange=()=>{document.querySelectorAll(".node-label,.edge-relation-label").forEach(el=>el.style.display=$("showLabels").checked?"":"none")};
-    $("btnCenter").onclick=()=>centerGraph();$("btnReorder").onclick=renderGraph;$("btnPNG").onclick=exportPNG;$("btnExpand").onclick=()=>{const el=$("graphView");if(!document.fullscreenElement)el.requestFullscreen?.();else document.exitFullscreen?.()};
+    $("btnCenter").onclick=()=>centerGraph();$("btnReorder").onclick=()=>{edits.nodePositions={};saveStorage();renderGraph();toast("Grafo reordenado y fijado.")};$("btnPNG").onclick=exportPNG;$("btnExpand").onclick=()=>{const el=$("graphView");if(!document.fullscreenElement)el.requestFullscreen?.();else document.exitFullscreen?.()};
     $("btnEditSelected").onclick=editSelected;$("btnDeleteSelected").onclick=deleteSelected;$("btnAddNode").onclick=()=>openModal("addNode",{});$("btnAddEdge").onclick=()=>graphData.nodes.length>=2?openModal("addEdge",{}):toast("Primero agrega al menos dos entidades.");$("btnAddText").onclick=()=>openModal("addText",{});$("btnUndoEdit").onclick=restoreGraph;
     $("btnSideAddNode").onclick=()=>openModal("addNode",{});$("btnSideAddEdge").onclick=()=>graphData.nodes.length>=2?openModal("addEdge",{}):toast("Primero agrega al menos dos entidades.");$("btnSideAddText").onclick=()=>openModal("addText",{});$("btnSideEdit").onclick=editSelected;$("btnSideDelete").onclick=deleteSelected;
     $("modalClose").onclick=closeModal;$("modalCancel").onclick=closeModal;$("modalSave").onclick=saveModal;$("editorModal").onclick=e=>{if(e.target===$("editorModal"))closeModal()};
-    $("btnGenerateReport").onclick=()=>{renderReportPreview();generateReport(true);toast("Vista previa actualizada.")};$("btnReportPDF").onclick=exportPDF;$("btnCopyReport").onclick=async()=>{await navigator.clipboard.writeText(generateReport(true));toast("Informe copiado.")};$("btnTxtReport").onclick=()=>downloadBlob(generateReport(true),`informe_divincri_${new Date().toISOString().slice(0,10)}.txt`);
+    $("btnGenerateReport").onclick=()=>{renderReportPreview();generateReport(true);toast("Vista previa actualizada.")};$("btnReportPDF").onclick=exportPDF;$("btnReportExcel").onclick=exportExcel;$("btnCopyReport").onclick=async()=>{await navigator.clipboard.writeText(generateReport(true));toast("Informe copiado.")};$("btnTxtReport").onclick=()=>downloadBlob(generateReport(true),`informe_divincri_${new Date().toISOString().slice(0,10)}.txt`);
     window.addEventListener("resize",()=>{clearTimeout(window.__rz);window.__rz=setTimeout(()=>{if($("graphView").classList.contains("active"))renderGraph()},220)});
     window.addEventListener("keydown",e=>{if((e.key==="Delete"||e.key==="Backspace")&&selected&&!$("editorModal").classList.contains("open")&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();deleteSelected()}if(e.key==="Escape")closeModal()});
 
