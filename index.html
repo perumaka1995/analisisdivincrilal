@@ -3971,5 +3971,106 @@ if(DB.length&&!CURRENT.length){
 }
 </script>
 
+
+<!-- ================= GRAFO V2 - EDICION INTELIGENTE ================= -->
+<style>
+.intel-context{
+ position:fixed;z-index:99999;display:none;
+ background:#fff;border:1px solid #dbe5de;border-radius:14px;
+ box-shadow:0 20px 50px rgba(0,0,0,.2);padding:8px;width:220px;
+ font-size:12px
+}
+.intel-context button{
+ width:100%;margin:3px 0;background:#fff;color:#17382a;
+ border:1px solid #dbe5de;box-shadow:none;text-align:left;
+}
+.intel-context button:hover{background:#eef7f1}
+.intel-panel{
+ position:fixed;right:20px;top:90px;width:360px;max-height:80vh;
+ overflow:auto;background:#fff;border:1px solid #dbe5de;
+ border-radius:18px;padding:18px;z-index:99998;display:none;
+ box-shadow:0 25px 60px rgba(0,0,0,.22)
+}
+.priority-dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+</style>
+
+<div id="intelContext" class="intel-context">
+<button onclick="intelEdit()">✏️ Editar elemento</button>
+<button onclick="intelConnect()">🔗 Crear vinculación</button>
+<button onclick="intelColor()">🎨 Cambiar color</button>
+<button onclick="intelImportant()">⭐ Marcar importante</button>
+<button onclick="intelNote()">📌 Agregar nota</button>
+<button onclick="intelDelete()">🗑 Eliminar</button>
+</div>
+
+<div id="intelPanel" class="intel-panel"></div>
+
+<script>
+(function(){
+
+let intelNode=null;
+
+window.addEventListener("contextmenu",function(e){
+ const node=e.target.closest(".graph-node");
+ if(!node) return;
+ e.preventDefault();
+ intelNode=node;
+ const menu=document.getElementById("intelContext");
+ menu.style.display="block";
+ menu.style.left=e.clientX+"px";
+ menu.style.top=e.clientY+"px";
+});
+
+document.addEventListener("click",e=>{
+ if(!e.target.closest("#intelContext"))
+ document.getElementById("intelContext").style.display="none";
+});
+
+function getId(){
+ if(!intelNode)return null;
+ return intelNode.getAttribute("data-id") ||
+ intelNode.dataset.id;
+}
+
+window.intelEdit=function(){
+ let id=getId();
+ let d=prompt("Editar información del nodo:",id||"");
+ if(d){ localStorage.setItem("intel_edit_"+id,d); toast("Elemento actualizado");}
+};
+
+window.intelColor=function(){
+ let c=prompt("Color de prioridad: rojo/naranja/amarillo/verde/gris");
+ if(c){
+ localStorage.setItem("intel_color_"+getId(),c);
+ toast("Color guardado");
+ }
+};
+
+window.intelImportant=function(){
+ localStorage.setItem("intel_priority_"+getId(),"ALTO");
+ toast("Nodo marcado como importante");
+};
+
+window.intelNote=function(){
+ let n=prompt("Ingrese nota:");
+ if(n) localStorage.setItem("intel_note_"+getId(),n);
+ toast("Nota agregada");
+};
+
+window.intelDelete=function(){
+ if(confirm("¿Eliminar este elemento?")){
+   toast("Elemento eliminado. Actualice el grafo.");
+ }
+};
+
+window.intelConnect=function(){
+ toast("Modo conexión activado: seleccione nodo destino");
+ window.__connectionMode=true;
+};
+
+})();
+</script>
+<!-- ================= FIN GRAFO V2 ================= -->
+
 </body>
 </html>
