@@ -4262,5 +4262,165 @@ document.getElementById("priorityModal").style.display="none";
 </script>
 <!-- ===== FIN V3 ===== -->
 
+
+<!-- ================= CORRECCION V4 EDITAR + FECHAS ================= -->
+<style>
+.edit-fix-modal{
+position:fixed;right:25px;top:110px;width:380px;z-index:999999;
+background:white;border:1px solid #dbe5de;border-radius:18px;
+padding:18px;box-shadow:0 25px 60px rgba(0,0,0,.25);display:none
+}
+.edit-fix-modal input,.edit-fix-modal textarea,.edit-fix-modal select{
+width:100%;margin-bottom:10px;padding:10px;border:1px solid #ccd9d0;border-radius:10px
+}
+.edit-fix-modal h3{margin-top:0;color:#073d25}
+</style>
+
+<div id="editFixModal" class="edit-fix-modal">
+<h3>✏️ Editar elemento</h3>
+<label>Tipo</label>
+<select id="editTipo">
+<option>DNI</option>
+<option>Número</option>
+<option>IMEI</option>
+<option>Persona</option>
+<option>Operadora</option>
+</select>
+
+<label>Valor</label>
+<input id="editValor">
+
+<label>Descripción</label>
+<textarea id="editDesc"></textarea>
+
+<label>Nivel</label>
+<select id="editNivel">
+<option>CRÍTICO</option>
+<option>IMPORTANTE</option>
+<option>ANÁLISIS</option>
+<option>CONFIRMADO</option>
+<option>DESCARTADO</option>
+</select>
+
+<button onclick="guardarEdicionReal()">💾 Guardar cambios</button>
+<button onclick="cerrarEdicionReal()" class="light">Cerrar</button>
+</div>
+
+
+<script>
+
+let nodoEditandoReal=null;
+
+function abrirEditorReal(nodo){
+
+ nodoEditandoReal=nodo;
+
+ let id=nodo?.dataset?.id || nodo?.getAttribute("data-id") || "";
+
+ document.getElementById("editValor").value =
+ localStorage.getItem("valor_"+id) || id;
+
+ document.getElementById("editDesc").value =
+ localStorage.getItem("desc_"+id) || "";
+
+ document.getElementById("editFixModal").style.display="block";
+
+}
+
+
+window.guardarEdicionReal=function(){
+
+ if(!nodoEditandoReal)return;
+
+ let id=nodoEditandoReal.dataset.id ||
+ nodoEditandoReal.getAttribute("data-id");
+
+ let valor=document.getElementById("editValor").value;
+ let desc=document.getElementById("editDesc").value;
+ let nivel=document.getElementById("editNivel").value;
+
+ localStorage.setItem("valor_"+id,valor);
+ localStorage.setItem("desc_"+id,desc);
+ localStorage.setItem("nivel_"+id,nivel);
+
+ nodoEditandoReal.dataset.valor=valor;
+
+ toast("Elemento editado correctamente");
+
+ document.getElementById("editFixModal").style.display="none";
+
+ if(typeof renderAll==="function"){
+   renderAll(CURRENT,"");
+ }
+
+};
+
+
+window.cerrarEdicionReal=function(){
+ document.getElementById("editFixModal").style.display="none";
+};
+
+
+// Reemplaza edición anterior que solo guardaba texto
+window.intelEdit=function(){
+
+ if(window.intelNodeActual){
+
+   abrirEditorReal(window.intelNodeActual);
+
+ }else{
+
+   toast("Seleccione primero un elemento");
+
+ }
+
+};
+
+
+// Guarda nodo seleccionado del menú contextual
+document.addEventListener("contextmenu",function(e){
+
+ let node=e.target.closest(".graph-node");
+
+ if(node){
+
+   window.intelNodeActual=node;
+
+ }
+
+});
+
+
+// FECHAS DE VINCULOS
+window.obtenerFechaVinculo=function(link){
+
+ return link.fecha ||
+ link.fecha_hora ||
+ link.fechaHora ||
+ link.date ||
+ link.timestamp ||
+ "Sin fecha";
+
+};
+
+
+// Mejora tooltip de relaciones
+document.addEventListener("mouseover",function(e){
+
+ let edge=e.target.closest(".link,.edge,.relation");
+
+ if(edge && edge.dataset){
+
+   let fecha=obtenerFechaVinculo(edge.dataset);
+
+   edge.title="📅 Fecha: "+fecha;
+
+ }
+
+});
+
+</script>
+<!-- ================= FIN CORRECCION V4 ================= -->
+
 </body>
 </html>
