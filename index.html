@@ -1144,6 +1144,109 @@
     @media(max-width:520px){#graphWrap{height:540px}}
 
   </style>
+
+<!-- FIREBASE ANALYTICS DE ACTIVIDAD -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/*
+ PEGA AQUÍ LOS DATOS QUE TE ENTREGA FIREBASE
+*/
+const firebaseConfig = {
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_AUTH_DOMAIN",
+  projectId: "TU_PROJECT_ID",
+  storageBucket: "TU_STORAGE_BUCKET",
+  messagingSenderId: "TU_MESSAGING_SENDER_ID",
+  appId: "TU_APP_ID"
+};
+
+let db = null;
+
+try {
+  const app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+} catch(e) {
+  console.log("Firebase pendiente de configuración");
+}
+
+
+window.registrarActividad = async function(evento, datos={}){
+
+  if(!db) return;
+
+  try{
+
+    await addDoc(collection(db,"actividad"),{
+
+      evento:evento,
+
+      datos:datos,
+
+      fecha:new Date().toISOString(),
+
+      navegador:navigator.userAgent,
+
+      pantalla:
+      window.innerWidth+"x"+window.innerHeight
+
+    });
+
+  }catch(error){
+
+    console.log(error);
+
+  }
+
+};
+
+
+// Entrada
+registrarActividad("ENTRADA",{
+ pagina:location.pathname
+});
+
+
+// Tiempo de permanencia
+
+const inicioSesion = Date.now();
+
+
+window.addEventListener("beforeunload",()=>{
+
+ const segundos =
+ Math.floor(
+ (Date.now()-inicioSesion)/1000
+ );
+
+
+ registrarActividad("SALIDA",{
+   tiempo_segundos:segundos
+ });
+
+});
+
+
+// Captura errores
+
+window.addEventListener("error",(e)=>{
+
+ registrarActividad("ERROR",{
+
+  mensaje:e.message,
+
+  archivo:e.filename,
+
+  linea:e.lineno
+
+ });
+
+});
+
+</script>
+<!-- FIN FIREBASE -->
+
 </head>
 <body>
 
