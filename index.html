@@ -3036,6 +3036,13 @@ function renderGraph(records,query){
   const guideLayer=svgNode("g",{class:"graph-guides"}),edgeLayer=svgNode("g",{class:"links"}),labelLayer=svgNode("g",{class:"link-labels"}),nodeLayer=svgNode("g",{class:"nodes"});root.append(guideLayer,edgeLayer,labelLayer,nodeLayer);graphRenderGuides(layout,guideLayer);
   visible.edges.forEach(edge=>{
     const st=graphRelationStyle(edge.relation),path=svgNode("path",{d:graphCurvePath(edge),fill:"none",stroke:st.color,"stroke-width":Math.min(4,1.4+Math.log2(edge.count+1)*.68),"stroke-dasharray":st.dash,"stroke-linecap":"round",opacity:".52"});
+    // FIX: guardar TODAS las fechas del vínculo en el elemento SVG
+    // antes solo se mostraba la primera fecha porque el path no tenía historial asociado.
+    if(edge.fechas && edge.fechas.length){
+      path.dataset.fechas = JSON.stringify(edge.fechas);
+      path.dataset.tipo = edge.relation || "";
+      path.style.pointerEvents="stroke";
+    }
     edgeLayer.appendChild(path);graphState.edgeEls.set(edge.id,path);
   });
   const showLabels=graphState.options.showLabels||visible.nodes.length<=8;
@@ -4499,6 +4506,14 @@ function mostrarHistorialVinculo(event, link){
 
  }catch(e){}
 
+
+ if(typeof fechas === "string"){
+   try{
+     fechas = JSON.parse(fechas);
+   }catch(e){
+     fechas = [fechas];
+   }
+ }
 
  if(!Array.isArray(fechas)){
 
