@@ -2623,12 +2623,17 @@ function buildNetwork(records,query){
     nodes.get(id).count++;
     return id;
   }
-  function addEdge(source,target,relation){
+  function addEdge(source,target,relation,fecha){
     if(!source||!target||source===target)return;
     const pair=[source,target].sort();
     const key=pair[0]+"|"+pair[1]+"|"+relation;
-    if(!edges.has(key))edges.set(key,{id:key,source:pair[0],target:pair[1],relation,count:0});
-    edges.get(key).count++;
+    if(!edges.has(key))edges.set(key,{id:key,source:pair[0],target:pair[1],relation,count:0,fechas:[]});
+    const edge=edges.get(key);
+    edge.count++;
+    if(fecha){
+      const f=String(fecha).trim();
+      if(f && !edge.fechas.includes(f)) edge.fechas.push(f);
+    }
   }
   records.forEach(r=>{
     const nNumero=add(r.numero,"numero",r.numero);
@@ -2636,10 +2641,11 @@ function buildNetwork(records,query){
     const nDni=add(r.dni,"dni",r.dni);
     const nPersona=add(r.nombre,"persona",r.nombre);
     const nOperadora=add(r.operadora,"operadora",r.operadora);
-    addEdge(nNumero,nImei,"tecnico");
-    addEdge(nNumero,nDni,"administrativo");
-    addEdge(nDni,nPersona,"identidad");
-    addEdge(nNumero,nOperadora,"servicio");
+    const f=r.fecha_hora||r.fechaHora||r.fecha||r.date||"";
+    addEdge(nNumero,nImei,"tecnico",f);
+    addEdge(nNumero,nDni,"administrativo",f);
+    addEdge(nDni,nPersona,"identidad",f);
+    addEdge(nNumero,nOperadora,"servicio",f);
   });
   const outNodes=[...nodes.values()],outEdges=[...edges.values()];
   const byId=new Map(outNodes.map(n=>[n.id,n]));
