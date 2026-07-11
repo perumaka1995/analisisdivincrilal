@@ -3010,5 +3010,863 @@ loadDB();
 </script>
 
 
+
+<style id="graph-editor-upgrade-styles">
+  /* ===== ACTUALIZACIÓN: EDICIÓN DEL GRAFO, FECHAS Y CONTADOR ===== */
+  .metrics{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .metric.visitor-metric .metric-icon{color:#5a3f9f;background:#f4efff;border-color:#dfd3f8}
+  .graph-toolbar-actions .graph-edit-btn{color:#fff;background:linear-gradient(180deg,#8f6813,#6f4b04);border-color:#9f741b}
+  .graph-toolbar-actions .graph-edit-btn:hover{color:#fff;background:linear-gradient(180deg,#a87915,#7b5305)}
+  .graph-toolbar-actions .graph-date-toggle.active{color:#fff;background:linear-gradient(180deg,#3477c3,#20528f);border-color:#20528f}
+  .graph-selection-actions .danger-mini{color:#fff;background:linear-gradient(180deg,#ca3e4b,#941b25);border-color:#941b25}
+  .edge-date-labels .edge-date-pill{cursor:pointer}
+  .edge-date-labels .edge-date-pill:hover rect{filter:brightness(.98);stroke-width:1.5}
+  .edge-date-labels text{paint-order:stroke;stroke:#fff;stroke-width:2.5px;stroke-linejoin:round}
+  .links path.graph-edge-clickable{cursor:pointer;pointer-events:stroke}
+  .links path.graph-edge-clickable:hover{opacity:.95!important;stroke-width:4.4!important}
+  .graph-modal{
+    position:fixed;inset:0;z-index:20000;display:none;align-items:center;justify-content:center;
+    padding:22px;background:rgba(2,18,11,.64);backdrop-filter:blur(7px)
+  }
+  .graph-modal.show{display:flex}
+  .graph-modal-card{
+    width:min(920px,96vw);max-height:min(88vh,900px);overflow:auto;
+    border:1px solid #d7e2da;border-radius:22px;background:#fff;
+    box-shadow:0 32px 90px rgba(2,18,11,.34)
+  }
+  .graph-modal-card.relation-card{width:min(790px,96vw)}
+  .graph-modal-head{
+    position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:16px 18px;border-bottom:1px solid var(--border);
+    background:rgba(255,255,255,.96);backdrop-filter:blur(14px)
+  }
+  .graph-modal-title{min-width:0}
+  .graph-modal-title b{display:block;color:var(--pnp-900);font-size:14px}
+  .graph-modal-title span{display:block;margin-top:3px;color:#68786f;font-size:10px;line-height:1.4}
+  .graph-modal-close{
+    width:38px;min-width:38px;padding:0;color:#43564b;background:#fff;border-color:#d3dfd7;box-shadow:none;font-size:19px
+  }
+  .graph-modal-body{padding:18px}
+  .graph-editor-tabs{
+    display:flex;gap:7px;flex-wrap:wrap;margin-bottom:15px;padding:5px;border:1px solid #dbe5de;border-radius:14px;background:#f1f6f3
+  }
+  .graph-editor-tabs button{flex:1;min-width:150px;box-shadow:none}
+  .graph-editor-tabs button:not(.active){color:#405247;background:transparent}
+  .graph-editor-pane{display:none}
+  .graph-editor-pane.active{display:block}
+  .editor-section{
+    margin-bottom:14px;padding:15px;border:1px solid #dce6df;border-radius:16px;background:linear-gradient(145deg,#fbfdfc,#f5f9f6)
+  }
+  .editor-section h3{margin:0 0 5px;color:var(--pnp-800);font-size:12px}
+  .editor-section .subcopy{margin:0 0 12px;color:#6b7a72;font-size:9px;line-height:1.45}
+  .editor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .editor-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .editor-span-2{grid-column:1/-1}
+  .selected-node-card{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:12px;border:1px solid #cfe0d5;border-radius:14px;background:#eef7f1
+  }
+  .selected-node-card .copy{min-width:0}
+  .selected-node-card b{display:block;color:#16482f;font-size:11px;word-break:break-word}
+  .selected-node-card span{display:block;margin-top:3px;color:#607168;font-size:9px}
+  .selected-node-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+  .selected-node-actions button{min-height:32px;padding:0 9px;font-size:8px;box-shadow:none}
+  .connection-list{display:grid;gap:8px;margin-top:10px}
+  .connection-item{
+    display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;
+    padding:10px 11px;border:1px solid #dde7e0;border-radius:12px;background:#fff
+  }
+  .connection-item b{display:block;color:#273c31;font-size:10px;word-break:break-word}
+  .connection-item span{display:block;margin-top:3px;color:#738179;font-size:8px;line-height:1.35}
+  .connection-item button{min-height:30px;padding:0 9px;font-size:8px;box-shadow:none}
+  .relation-summary{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    margin-bottom:14px;padding:13px;border:1px solid #d2e0d7;border-radius:15px;background:#f4f8f5
+  }
+  .relation-summary b{display:block;color:#1d3929;font-size:12px}
+  .relation-summary span{display:block;margin-top:4px;color:#65756c;font-size:9px}
+  .relation-date-groups{display:grid;gap:11px}
+  .relation-date-group{overflow:hidden;border:1px solid #dce6df;border-radius:14px;background:#fff}
+  .relation-date-head{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:10px 12px;background:#eef5f0;border-bottom:1px solid #dce6df
+  }
+  .relation-date-head b{color:#234431;font-size:10px}
+  .relation-date-head span{
+    display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:999px;
+    color:#fff;background:var(--pnp-700);font-size:8px;font-weight:900
+  }
+  .relation-event{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid #edf2ee}
+  .relation-event:last-child{border-bottom:0}
+  .relation-event b{display:block;color:#33483c;font-size:9px}
+  .relation-event p{margin:4px 0 0;color:#77857d;font-size:8px;line-height:1.4}
+  .relation-event button{min-height:29px;padding:0 8px;font-size:8px;box-shadow:none}
+  .graph-modal-foot{
+    display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;
+    padding:14px 18px;border-top:1px solid var(--border);background:#f8faf9
+  }
+  .graph-modal-foot button{box-shadow:none}
+  .mini-warning{
+    margin-top:10px;padding:10px 11px;border:1px solid #ead8a4;border-radius:11px;
+    background:#fff9e8;color:#745716;font-size:8.5px;line-height:1.45
+  }
+  @media(max-width:1350px){.metrics{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:760px){
+    .metrics{grid-template-columns:repeat(2,1fr)}
+    .graph-modal{padding:10px}
+    .graph-modal-card{max-height:94vh;border-radius:17px}
+    .graph-modal-body{padding:12px}
+    .editor-grid,.editor-grid.three{grid-template-columns:1fr}
+    .editor-span-2{grid-column:auto}
+    .selected-node-card,.relation-summary{align-items:flex-start;flex-direction:column}
+    .selected-node-actions{justify-content:flex-start}
+  }
+  @media(max-width:520px){.metrics{grid-template-columns:1fr}}
+</style>
+
+<script id="graph-editor-upgrade-script">
+/* ==============================================================
+   ACTUALIZACIÓN DEL GRAFO
+   - Ícono de teléfono más reconocible
+   - Edición de nodos y conexiones
+   - Fechas compactas sobre los vínculos
+   - Detalle agrupado por fecha al hacer clic
+   - Contador local de sesiones
+   ============================================================== */
+
+const GRAPH_CUSTOM_KEY = STORAGE_KEY + "_graph_custom_v2";
+const GRAPH_VISIT_KEY = "divincri_visitas_locales_v1";
+const GRAPH_VISIT_SESSION_KEY = "divincri_visita_sesion_actual_v1";
+
+let GRAPH_CUSTOM = loadGraphCustomData();
+let graphDateLabelEls = new Map();
+
+function loadGraphCustomData(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(GRAPH_CUSTOM_KEY) || "{}");
+    return {
+      nodes:Array.isArray(raw.nodes)?raw.nodes:[],
+      edges:Array.isArray(raw.edges)?raw.edges:[],
+      aliases:raw.aliases && typeof raw.aliases==="object"?raw.aliases:{}
+    };
+  }catch(_){
+    return {nodes:[],edges:[],aliases:{}};
+  }
+}
+function saveGraphCustomData(){
+  localStorage.setItem(GRAPH_CUSTOM_KEY,JSON.stringify(GRAPH_CUSTOM));
+}
+function graphUid(prefix="id"){
+  if(window.crypto?.randomUUID)return prefix+"_"+crypto.randomUUID();
+  return prefix+"_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,9);
+}
+function graphStableRaw(type,value){
+  const v=(value||"").toString().trim();
+  if(["numero","imei","dni"].includes(type))return onlyDigits(v);
+  if(type==="operadora")return norm(v);
+  return v;
+}
+function graphCanonicalId(type,value){
+  return type+":"+graphStableRaw(type,value);
+}
+function graphFieldForType(type){
+  return {numero:"numero",imei:"imei",dni:"dni",persona:"nombre",operadora:"operadora"}[type]||"";
+}
+function graphNodeMatchesRecord(node,record){
+  const field=graphFieldForType(node.type);
+  if(!field)return false;
+  if(["persona","operadora"].includes(node.type))return norm(record[field])===norm(node.raw);
+  return (record[field]||"").toString()===node.raw;
+}
+function graphFormatDateInput(value){
+  const ts=parseDatePE(value);
+  if(!ts)return value||"Sin fecha";
+  return new Intl.DateTimeFormat("es-PE",{day:"2-digit",month:"2-digit",year:"numeric"}).format(new Date(ts));
+}
+function graphFormatTimeInput(value){
+  const ts=parseDatePE(value);
+  if(!ts)return "";
+  return new Intl.DateTimeFormat("es-PE",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date(ts));
+}
+function graphDateKey(value){
+  return graphFormatDateInput(value||"") || "Sin fecha";
+}
+function graphDatetimeLocalNow(){
+  const d=new Date();
+  const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);
+  return local.toISOString().slice(0,16);
+}
+function graphLocalDateToPE(value){
+  if(!value)return "";
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return value;
+  const date=new Intl.DateTimeFormat("es-PE",{day:"2-digit",month:"2-digit",year:"numeric"}).format(d);
+  const time=new Intl.DateTimeFormat("es-PE",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(d);
+  return date+" "+time;
+}
+function graphRelationText(relation){
+  return {
+    tecnico:"IMEI compartido",
+    administrativo:"Abonado / DNI",
+    identidad:"Identidad",
+    servicio:"Operadora",
+    manual:"Conexión manual"
+  }[relation]||"Conexión";
+}
+function graphRelationAuto(sourceType,targetType){
+  const pair=[sourceType,targetType].sort().join("|");
+  if(pair==="imei|numero")return "tecnico";
+  if(pair==="dni|numero")return "administrativo";
+  if(pair==="dni|persona")return "identidad";
+  if(pair==="numero|operadora")return "servicio";
+  return "manual";
+}
+
+/* Reemplaza solo el símbolo del número/celular. */
+const __graphIconMarkupBase = graphIconMarkup;
+graphIconMarkup = function(type,color){
+  if(type!=="numero")return __graphIconMarkupBase(type,color);
+  return `
+    <rect x="-9.5" y="-14" width="19" height="28" rx="3.4" fill="#fff" stroke="${color}" stroke-width="2"/>
+    <rect x="-7" y="-9.7" width="14" height="18.2" rx="1.4" fill="${color}" opacity=".10" stroke="${color}" stroke-width=".85"/>
+    <path d="M-3.4-11.6h6.8" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
+    <circle cx="0" cy="11.2" r="1.25" fill="${color}"/>
+    <path d="M-3.7-4.9c.8 4.1 3 6.4 7.1 7.2l1.7-1.8-2.6-2.1-1.4 1c-1.3-.7-2.2-1.6-2.9-2.9l1-1.4-2.1-2.6z"
+      fill="none" stroke="${color}" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M4.1-7.5v2.2M1.9-7.5v1.3" stroke="${color}" stroke-width="1.05" stroke-linecap="round"/>
+  `;
+};
+
+/* Construye la red incluyendo eventos y conexiones manuales. */
+buildNetwork = function(records,query){
+  const nodes=new Map(),edges=new Map();
+
+  function add(raw,type,label,explicitId=null,isManual=false){
+    const cleanRaw=(raw||"").toString().trim();
+    if(!cleanRaw)return null;
+    const id=explicitId||graphCanonicalId(type,cleanRaw);
+    if(!nodes.has(id)){
+      nodes.set(id,{
+        id,raw:cleanRaw,type,
+        label:GRAPH_CUSTOM.aliases[id]||graphNodeLabel(type,cleanRaw,label||cleanRaw),
+        target:graphTargetMatch(cleanRaw,label||cleanRaw,query),
+        count:0,degree:0,fullDegree:0,x:0,y:0,w:0,h:0,
+        isCenter:false,isObjective:false,isManual
+      });
+    }
+    const n=nodes.get(id);
+    n.count=Math.max(n.count+(isManual?0:1),1);
+    if(GRAPH_CUSTOM.aliases[id])n.label=GRAPH_CUSTOM.aliases[id];
+    return id;
+  }
+
+  function addEdge(source,target,relation,event){
+    if(!source||!target||source===target)return;
+    const pair=[source,target].sort();
+    const key=pair[0]+"|"+pair[1]+"|"+relation;
+    if(!edges.has(key))edges.set(key,{id:key,source:pair[0],target:pair[1],relation,count:0,events:[]});
+    const edge=edges.get(key);
+    edge.count++;
+    if(event)edge.events.push(event);
+  }
+
+  (records||[]).forEach((r,index)=>{
+    if(r?.__graphOnly)return;
+    const nNumero=add(r.numero,"numero",r.numero);
+    const nImei=add(r.imei,"imei",r.imei);
+    const nDni=add(r.dni,"dni",r.dni);
+    const nPersona=add(r.nombre,"persona",r.nombre);
+    const nOperadora=add(r.operadora,"operadora",r.operadora);
+    const recordKeyValue=keyRecord(r);
+    const common={
+      sourceType:"base",
+      recordKey:recordKeyValue,
+      date:r.fecha_hora||"",
+      kind:r.tipo||"Vinculación",
+      note:r.operadora||"",
+      record:{...r}
+    };
+    addEdge(nNumero,nImei,"tecnico",{...common,id:"base:"+recordKeyValue+":tecnico"});
+    addEdge(nNumero,nDni,"administrativo",{...common,id:"base:"+recordKeyValue+":administrativo"});
+    addEdge(nDni,nPersona,"identidad",{...common,id:"base:"+recordKeyValue+":identidad"});
+    addEdge(nNumero,nOperadora,"servicio",{...common,id:"base:"+recordKeyValue+":servicio"});
+  });
+
+  GRAPH_CUSTOM.nodes.forEach(n=>{
+    add(n.raw,n.type,n.label,n.id,true);
+  });
+
+  GRAPH_CUSTOM.edges.forEach(custom=>{
+    if(!nodes.has(custom.source)||!nodes.has(custom.target))return;
+    addEdge(custom.source,custom.target,custom.relation||"manual",{
+      id:custom.id,
+      sourceType:"custom",
+      customEdgeId:custom.id,
+      date:custom.date||"",
+      kind:"Conexión manual",
+      note:custom.note||"",
+      createdAt:custom.createdAt||""
+    });
+  });
+
+  const outNodes=[...nodes.values()],outEdges=[...edges.values()];
+  const byId=new Map(outNodes.map(n=>[n.id,n]));
+  outEdges.forEach(e=>{
+    if(byId.has(e.source))byId.get(e.source).degree++;
+    if(byId.has(e.target))byId.get(e.target).degree++;
+    e.events.sort((a,b)=>parseDatePE(b.date)-parseDatePE(a.date));
+  });
+  outNodes.forEach(n=>{
+    n.fullDegree=n.degree;
+    if(GRAPH_CUSTOM.aliases[n.id])n.label=GRAPH_CUSTOM.aliases[n.id];
+  });
+  return {nodes:outNodes,edges:outEdges};
+};
+
+/* Estilo adicional para conexiones manuales. */
+const __graphRelationStyleBase = graphRelationStyle;
+graphRelationStyle = function(relation){
+  if(relation==="manual")return {color:"#5f6f66",dash:"4 4",label:"Conexión manual"};
+  return __graphRelationStyleBase(relation);
+};
+
+function graphEdgeEventSummary(edge){
+  const events=(edge.events||[]).slice().sort((a,b)=>parseDatePE(b.date)-parseDatePE(a.date));
+  if(!events.length)return {label:"Sin fecha",extra:0,total:0};
+  const label=graphDateKey(events[0].date);
+  return {label,extra:Math.max(0,events.length-1),total:events.length};
+}
+function graphUpdateDateGeometry(){
+  const occupied=[];
+  const offsets=[[0,13],[0,-13],[0,29],[0,-29],[34,13],[-34,13],[34,-13],[-34,-13],[0,45],[0,-45]];
+  graphDateLabelEls.forEach((g,edgeId)=>{
+    const edge=graphState.visibleNet?.edges?.find(e=>e.id===edgeId);
+    if(!edge)return;
+    const m=graphEdgeMid(edge);
+    const width=Number(g.dataset.pillWidth||70),height=18;
+    let chosen={x:m.x,y:m.y+13,box:null};
+    for(const [dx,dy] of offsets){
+      const x=m.x+dx,y=m.y+dy;
+      const box={l:x-width/2-4,r:x+width/2+4,t:y-height/2-3,b:y+height/2+3};
+      const collides=occupied.some(o=>!(box.r<o.l||box.l>o.r||box.b<o.t||box.t>o.b));
+      if(!collides){chosen={x,y,box};break}
+    }
+    if(!chosen.box)chosen.box={l:chosen.x-width/2-4,r:chosen.x+width/2+4,t:chosen.y-height/2-3,b:chosen.y+height/2+3};
+    occupied.push(chosen.box);
+    g.setAttribute("transform",`translate(${chosen.x} ${chosen.y})`);
+  });
+}
+function graphEnhanceRenderedEdges(){
+  graphDateLabelEls=new Map();
+  if(!graphState.root||!graphState.visibleNet?.edges?.length)return;
+
+  graphState.edgeEls.forEach((path,edgeId)=>{
+    path.classList.add("graph-edge-clickable");
+    path.setAttribute("pointer-events","stroke");
+    path.setAttribute("tabindex","0");
+    path.setAttribute("role","button");
+    path.setAttribute("aria-label","Abrir detalle de la conexión");
+    path.onclick=e=>{e.stopPropagation();openGraphRelationDetails(edgeId)};
+    path.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openGraphRelationDetails(edgeId)}};
+  });
+
+  if(graphState.options.showDates===false)return;
+  const nodeLayer=graphState.root.querySelector(".nodes");
+  const layer=svgNode("g",{class:"edge-date-labels"});
+  if(nodeLayer)graphState.root.insertBefore(layer,nodeLayer);else graphState.root.appendChild(layer);
+
+  graphState.visibleNet.edges.forEach(edge=>{
+    const summary=graphEdgeEventSummary(edge);
+    const st=graphRelationStyle(edge.relation);
+    const text=summary.extra?`${summary.label}  +${summary.extra}`:summary.label;
+    const width=Math.max(58,text.length*4.6+14);
+    const g=svgNode("g",{class:"edge-date-pill",role:"button",tabindex:"0"});
+    g.dataset.pillWidth=String(width);
+    const rect=svgNode("rect",{x:-width/2,y:-8.5,width,height:17,rx:8.5,fill:"#ffffff",stroke:st.color,"stroke-width":"1",opacity:".96"});
+    const txt=svgNode("text",{"text-anchor":"middle","dominant-baseline":"central",fill:st.color,"font-size":"7.1","font-family":"Segoe UI,Arial","font-weight":"900"});
+    txt.textContent=text;
+    g.append(rect,txt);
+    g.addEventListener("click",e=>{e.stopPropagation();openGraphRelationDetails(edge.id)});
+    g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openGraphRelationDetails(edge.id)}});
+    g.setAttribute("title",summary.total>1?`${summary.total} eventos. Haz clic para verlos agrupados por fecha.`:"Haz clic para ver el evento.");
+    layer.appendChild(g);
+    graphDateLabelEls.set(edge.id,g);
+  });
+  graphUpdateDateGeometry();
+}
+
+const __graphUpdateGeometryBase = graphUpdateGeometry;
+graphUpdateGeometry = function(){
+  __graphUpdateGeometryBase();
+  graphUpdateDateGeometry();
+};
+
+const __renderGraphBase = renderGraph;
+renderGraph = function(records,query){
+  const original=Array.isArray(records)?records:[];
+  const hasCustom=GRAPH_CUSTOM.nodes.length||GRAPH_CUSTOM.edges.length;
+  const input=!original.length&&hasCustom?[{__graphOnly:true}]:original;
+  __renderGraphBase(input,query);
+  graphState.records=original;
+  graphState.options.showDates=graphState.options.showDates!==false;
+  graphEnhanceRenderedEdges();
+  updateGraphDateToggle();
+};
+
+/* Interfaz */
+function installGraphUpgradeUI(){
+  const metrics=document.querySelector(".metrics");
+  if(metrics&&!document.getElementById("mVisits")){
+    metrics.insertAdjacentHTML("beforeend",`
+      <div class="metric visitor-metric">
+        <div class="metric-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/>
+            <path d="M2.5 20c.7-5.2 10.3-5.2 11 0M13.5 20c.4-3.8 7.6-3.8 8 0"/>
+          </svg>
+        </div>
+        <div class="metric-copy"><span>Ingresos</span><b id="mVisits">0</b><small>Sesiones en este navegador</small></div>
+      </div>`);
+  }
+
+  const actions=document.querySelector(".graph-toolbar-actions");
+  if(actions&&!document.getElementById("graphEditOpen")){
+    actions.insertAdjacentHTML("afterbegin",`
+      <button class="graph-edit-btn" id="graphEditOpen" type="button" onclick="openGraphEditor('node')" title="Agregar, renombrar o quitar nodos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z"/></svg><span>Editar</span>
+      </button>
+      <button class="light" type="button" onclick="openGraphEditor('connection')" title="Agregar o administrar conexiones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="12" r="2.4"/><circle cx="19" cy="6" r="2.4"/><circle cx="19" cy="18" r="2.4"/><path d="M7.2 11 16.7 6.9M7.2 13 16.7 17.1"/></svg><span>Conexiones</span>
+      </button>
+      <button class="light graph-date-toggle active" id="graphDatesToggle" type="button" onclick="toggleGraphDates()" title="Mostrar u ocultar fechas sobre los vínculos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18M7 14h3M14 14h3M7 18h3"/></svg><span>Fechas</span>
+      </button>`);
+  }
+
+  const selectionActions=document.querySelector("#graphSelectionBar .graph-selection-actions");
+  if(selectionActions&&!document.getElementById("graphRenameSelected")){
+    selectionActions.insertAdjacentHTML("afterbegin",`
+      <button class="light" id="graphRenameSelected" type="button" onclick="renameSelectedGraphNode()"><span>Renombrar</span></button>
+      <button class="light" type="button" onclick="connectFromSelectedGraphNode()"><span>Conectar</span></button>
+      <button class="danger-mini" type="button" onclick="deleteSelectedGraphNode()"><span>Quitar</span></button>`);
+  }
+
+  if(!document.getElementById("graphEditorModal")){
+    document.body.insertAdjacentHTML("beforeend",`
+      <div class="graph-modal" id="graphEditorModal" aria-hidden="true">
+        <div class="graph-modal-card" role="dialog" aria-modal="true" aria-labelledby="graphEditorTitle">
+          <div class="graph-modal-head">
+            <div class="graph-modal-title"><b id="graphEditorTitle">Editor del grafo</b><span>Los cambios se guardan en este navegador y no alteran el archivo original cargado.</span></div>
+            <button class="graph-modal-close" type="button" onclick="closeGraphModal('graphEditorModal')" aria-label="Cerrar">×</button>
+          </div>
+          <div class="graph-modal-body">
+            <div class="graph-editor-tabs">
+              <button id="editorTabNode" type="button" onclick="switchGraphEditorPane('node')">Nodos</button>
+              <button id="editorTabConnection" type="button" onclick="switchGraphEditorPane('connection')">Conexiones</button>
+            </div>
+
+            <section class="graph-editor-pane" id="editorPaneNode">
+              <div class="editor-section">
+                <h3>Nodo seleccionado</h3>
+                <p class="subcopy">Selecciona un icono del grafo para renombrarlo, conectarlo o quitarlo.</p>
+                <div id="editorSelectedNode"></div>
+              </div>
+              <div class="editor-section">
+                <h3>Agregar un nodo</h3>
+                <p class="subcopy">Después de crearlo, agrega una conexión para incorporarlo a la red.</p>
+                <div class="editor-grid">
+                  <div>
+                    <label>Tipo de entidad</label>
+                    <select id="newGraphNodeType">
+                      <option value="numero">Número / celular</option>
+                      <option value="imei">IMEI</option>
+                      <option value="dni">DNI</option>
+                      <option value="persona">Persona</option>
+                      <option value="operadora">Operadora</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label>Dato o identificador</label>
+                    <input id="newGraphNodeValue" placeholder="Ejemplo: 987654321">
+                  </div>
+                  <div class="editor-span-2">
+                    <label>Nombre visible o alias (opcional)</label>
+                    <input id="newGraphNodeAlias" placeholder="Ejemplo: Número objetivo / Titular investigado">
+                  </div>
+                </div>
+                <div class="btns"><button type="button" onclick="addGraphNodeFromEditor()">Agregar nodo</button></div>
+              </div>
+            </section>
+
+            <section class="graph-editor-pane" id="editorPaneConnection">
+              <div class="editor-section">
+                <h3>Agregar una conexión</h3>
+                <p class="subcopy">La fecha se mostrará de manera compacta sobre la línea. Al hacer clic se abrirán todos los eventos agrupados por fecha.</p>
+                <div class="editor-grid">
+                  <div><label>Origen</label><select id="graphConnectionSource" onchange="suggestGraphRelation()"></select></div>
+                  <div><label>Destino</label><select id="graphConnectionTarget" onchange="suggestGraphRelation()"></select></div>
+                  <div><label>Tipo de conexión</label>
+                    <select id="graphConnectionRelation">
+                      <option value="tecnico">IMEI compartido</option>
+                      <option value="administrativo">Abonado / DNI</option>
+                      <option value="identidad">Identidad</option>
+                      <option value="servicio">Operadora</option>
+                      <option value="manual">Conexión manual</option>
+                    </select>
+                  </div>
+                  <div><label>Fecha y hora</label><input id="graphConnectionDate" type="datetime-local"></div>
+                  <div class="editor-span-2"><label>Nota breve (opcional)</label><input id="graphConnectionNote" placeholder="Motivo o fuente de la vinculación"></div>
+                </div>
+                <div class="btns"><button type="button" onclick="addGraphConnectionFromEditor()">Agregar conexión</button></div>
+              </div>
+              <div class="editor-section">
+                <h3>Conexiones agregadas manualmente</h3>
+                <p class="subcopy">Las relaciones procedentes de archivos también pueden eliminarse desde el detalle de la línea.</p>
+                <div class="connection-list" id="customConnectionList"></div>
+              </div>
+            </section>
+          </div>
+          <div class="graph-modal-foot">
+            <button class="light" type="button" onclick="closeGraphModal('graphEditorModal')">Cerrar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="graph-modal" id="graphRelationModal" aria-hidden="true">
+        <div class="graph-modal-card relation-card" role="dialog" aria-modal="true" aria-labelledby="graphRelationTitle">
+          <div class="graph-modal-head">
+            <div class="graph-modal-title"><b id="graphRelationTitle">Detalle de la conexión</b><span>Eventos agrupados por fecha para evitar desorden en el grafo.</span></div>
+            <button class="graph-modal-close" type="button" onclick="closeGraphModal('graphRelationModal')" aria-label="Cerrar">×</button>
+          </div>
+          <div class="graph-modal-body" id="graphRelationBody"></div>
+          <div class="graph-modal-foot">
+            <button class="red" id="deleteWholeRelationBtn" type="button">Eliminar conexión completa</button>
+            <button class="light" type="button" onclick="closeGraphModal('graphRelationModal')">Cerrar</button>
+          </div>
+        </div>
+      </div>`);
+  }
+
+  document.querySelectorAll(".graph-modal").forEach(modal=>{
+    modal.addEventListener("click",e=>{if(e.target===modal)closeGraphModal(modal.id)});
+  });
+
+  document.addEventListener("keydown",e=>{
+    if(e.key==="Escape"){
+      closeGraphModal("graphEditorModal");
+      closeGraphModal("graphRelationModal");
+    }
+  });
+
+  replaceVisiblePhoneIcons();
+  updateLocalVisitorCount();
+}
+function replaceVisiblePhoneIcons(){
+  const legend=document.querySelector(".legend .numero svg");
+  if(legend)legend.innerHTML='<rect x="5.5" y="2.5" width="13" height="19" rx="2.4"/><path d="M9 5h6M8 8h8v8H8zM11 19h2"/><path d="M10 11c.5 1.8 1.5 2.8 3.3 3.3l1-1.1-1.5-1.2-.8.6c-.7-.4-1.2-.9-1.6-1.6l.6-.8-1.2-1.5z"/>';
+  const metric=document.querySelector(".metric:nth-child(2) .metric-icon svg");
+  if(metric)metric.innerHTML='<rect x="5.5" y="2.5" width="13" height="19" rx="2.4"/><path d="M9 5h6M8 8h8v8H8zM11 19h2"/><path d="M10 11c.5 1.8 1.5 2.8 3.3 3.3l1-1.1-1.5-1.2-.8.6c-.7-.4-1.2-.9-1.6-1.6l.6-.8-1.2-1.5z"/>';
+}
+function updateLocalVisitorCount(){
+  let count=Math.max(0,Number(localStorage.getItem(GRAPH_VISIT_KEY)||0));
+  if(!sessionStorage.getItem(GRAPH_VISIT_SESSION_KEY)){
+    count++;
+    localStorage.setItem(GRAPH_VISIT_KEY,String(count));
+    sessionStorage.setItem(GRAPH_VISIT_SESSION_KEY,"1");
+  }
+  const el=document.getElementById("mVisits");
+  if(el)el.textContent=count.toLocaleString("es-PE");
+}
+function updateGraphDateToggle(){
+  const b=document.getElementById("graphDatesToggle");
+  if(!b)return;
+  const active=graphState.options.showDates!==false;
+  b.classList.toggle("active",active);
+  const span=b.querySelector("span");
+  if(span)span.textContent=active?"Fechas":"Sin fechas";
+}
+function toggleGraphDates(){
+  graphState.options.showDates=graphState.options.showDates===false;
+  renderGraph(graphState.records.length?graphState.records:CURRENT,graphState.query||CURRENT_QUERY);
+}
+function closeGraphModal(id){
+  const modal=document.getElementById(id);
+  if(modal){modal.classList.remove("show");modal.setAttribute("aria-hidden","true")}
+}
+function switchGraphEditorPane(pane){
+  const node=pane==="node";
+  document.getElementById("editorPaneNode")?.classList.toggle("active",node);
+  document.getElementById("editorPaneConnection")?.classList.toggle("active",!node);
+  document.getElementById("editorTabNode")?.classList.toggle("active",node);
+  document.getElementById("editorTabConnection")?.classList.toggle("active",!node);
+}
+function graphAllEditorNodes(){
+  const net=buildNetwork(DB,"");
+  return net.nodes.slice().sort((a,b)=>{
+    const p={numero:1,imei:2,dni:3,persona:4,operadora:5};
+    return (p[a.type]||9)-(p[b.type]||9)||a.label.localeCompare(b.label);
+  });
+}
+function graphNodeOptionText(n){
+  return `${graphTypeLabel(n.type)} · ${n.label}${n.label!==n.raw?` (${n.raw})`:""}`;
+}
+function refreshGraphEditor(){
+  const nodes=graphAllEditorNodes();
+  const options=nodes.map(n=>`<option value="${esc(n.id)}">${esc(graphNodeOptionText(n))}</option>`).join("");
+  const source=document.getElementById("graphConnectionSource");
+  const target=document.getElementById("graphConnectionTarget");
+  const previousSource=source?.value||graphState.options.selectedId||"";
+  const previousTarget=target?.value||"";
+  if(source){source.innerHTML='<option value="">Selecciona el origen</option>'+options;source.value=nodes.some(n=>n.id===previousSource)?previousSource:""}
+  if(target){target.innerHTML='<option value="">Selecciona el destino</option>'+options;target.value=nodes.some(n=>n.id===previousTarget)?previousTarget:""}
+  const date=document.getElementById("graphConnectionDate");
+  if(date&&!date.value)date.value=graphDatetimeLocalNow();
+
+  const selected=nodes.find(n=>n.id===graphState.options.selectedId);
+  const selectedBox=document.getElementById("editorSelectedNode");
+  if(selectedBox){
+    selectedBox.innerHTML=selected?`
+      <div class="selected-node-card">
+        <div class="copy"><b>${esc(selected.label)}</b><span>${esc(graphTypeLabel(selected.type))} · Dato original: ${esc(selected.raw)}</span></div>
+        <div class="selected-node-actions">
+          <button class="light" type="button" onclick="renameSelectedGraphNode()">Renombrar</button>
+          <button type="button" onclick="connectFromSelectedGraphNode()">Conectar</button>
+          <button class="red" type="button" onclick="deleteSelectedGraphNode()">Quitar</button>
+        </div>
+      </div>`:`<div class="empty" style="padding:16px">Aún no seleccionaste un nodo del grafo.</div>`;
+  }
+
+  const list=document.getElementById("customConnectionList");
+  if(list){
+    if(!GRAPH_CUSTOM.edges.length)list.innerHTML='<div class="empty" style="padding:15px">No hay conexiones manuales.</div>';
+    else{
+      const byId=new Map(nodes.map(n=>[n.id,n]));
+      list.innerHTML=GRAPH_CUSTOM.edges.slice().sort((a,b)=>parseDatePE(b.date)-parseDatePE(a.date)).map(e=>{
+        const s=byId.get(e.source),t=byId.get(e.target);
+        return `<div class="connection-item"><div><b>${esc(s?.label||e.source)} ↔ ${esc(t?.label||e.target)}</b><span>${esc(graphRelationText(e.relation))} · ${esc(e.date||"Sin fecha")}${e.note?` · ${esc(e.note)}`:""}</span></div><button class="red" type="button" onclick="removeCustomConnection('${esc(e.id)}')">Eliminar</button></div>`;
+      }).join("");
+    }
+  }
+}
+function openGraphEditor(pane="node"){
+  refreshGraphEditor();
+  switchGraphEditorPane(pane);
+  const modal=document.getElementById("graphEditorModal");
+  if(modal){modal.classList.add("show");modal.setAttribute("aria-hidden","false")}
+  if(pane==="connection"&&graphState.options.selectedId){
+    const source=document.getElementById("graphConnectionSource");
+    if(source)source.value=graphState.options.selectedId;
+  }
+  suggestGraphRelation();
+}
+function refreshAfterGraphEdit(message){
+  saveGraphCustomData();
+  saveDB();
+  updateStats();
+  if(CURRENT_QUERY)runSearch();else showAll();
+  refreshGraphEditor();
+  if(message)toast(message);
+}
+function addGraphNodeFromEditor(){
+  const type=document.getElementById("newGraphNodeType")?.value||"numero";
+  const input=document.getElementById("newGraphNodeValue");
+  const aliasInput=document.getElementById("newGraphNodeAlias");
+  let raw=(input?.value||"").trim();
+  const alias=(aliasInput?.value||"").trim();
+
+  if(["numero","imei","dni"].includes(type))raw=onlyDigits(raw);
+  if(!raw){toast("Ingresa el dato del nuevo nodo.");return}
+  if(type==="numero"&&raw.length<6){toast("El número debe tener al menos 6 dígitos.");return}
+  if(type==="imei"&&raw.length<12){toast("El IMEI debe tener al menos 12 dígitos.");return}
+  if(type==="dni"&&raw.length<8){toast("El DNI debe tener al menos 8 dígitos.");return}
+
+  const id=graphCanonicalId(type,raw);
+  const exists=graphAllEditorNodes().some(n=>n.id===id);
+  if(!exists)GRAPH_CUSTOM.nodes.push({id,type,raw,label:alias||graphNodeLabel(type,raw,raw),createdAt:new Date().toISOString()});
+  if(alias)GRAPH_CUSTOM.aliases[id]=alias;
+  graphState.options.selectedId=id;
+
+  if(input)input.value="";
+  if(aliasInput)aliasInput.value="";
+  saveGraphCustomData();
+  refreshGraphEditor();
+  switchGraphEditorPane("connection");
+  const source=document.getElementById("graphConnectionSource");
+  if(source)source.value=id;
+  suggestGraphRelation();
+  refreshAfterGraphEdit(exists?"El nodo ya existía; quedó seleccionado para conectarlo.":"Nodo agregado. Ahora selecciona su destino y crea la conexión.");
+}
+function renameSelectedGraphNode(){
+  const id=graphState.options.selectedId;
+  if(!id){toast("Selecciona primero un nodo del grafo.");return}
+  const node=graphAllEditorNodes().find(n=>n.id===id);
+  if(!node){toast("No se encontró el nodo seleccionado.");return}
+  const value=prompt("Escribe el nombre visible o alias. Déjalo vacío para restaurar el nombre original:",GRAPH_CUSTOM.aliases[id]||node.label||"");
+  if(value===null)return;
+  const alias=value.trim();
+  if(alias)GRAPH_CUSTOM.aliases[id]=alias;else delete GRAPH_CUSTOM.aliases[id];
+  refreshAfterGraphEdit(alias?"Nodo renombrado.":"Se restauró el nombre original.");
+}
+function connectFromSelectedGraphNode(){
+  if(!graphState.options.selectedId){toast("Selecciona primero un nodo del grafo.");return}
+  openGraphEditor("connection");
+  const source=document.getElementById("graphConnectionSource");
+  if(source)source.value=graphState.options.selectedId;
+  suggestGraphRelation();
+}
+function deleteSelectedGraphNode(){
+  const id=graphState.options.selectedId;
+  if(!id){toast("Selecciona primero un nodo del grafo.");return}
+  const node=graphAllEditorNodes().find(n=>n.id===id);
+  if(!node)return;
+  if(!confirm(`¿Quitar "${node.label}" del grafo? Se retirará este dato de los registros relacionados y también sus conexiones manuales.`))return;
+
+  const field=graphFieldForType(node.type);
+  if(field){
+    DB=DB.map(r=>{
+      const copy={...r};
+      if(graphNodeMatchesRecord(node,copy))copy[field]="";
+      return cleanRecord(copy);
+    }).filter(r=>r.numero||r.imei||r.dni||r.nombre||r.operadora);
+    DB=dedupe(DB);
+  }
+
+  GRAPH_CUSTOM.nodes=GRAPH_CUSTOM.nodes.filter(n=>n.id!==id);
+  GRAPH_CUSTOM.edges=GRAPH_CUSTOM.edges.filter(e=>e.source!==id&&e.target!==id);
+  delete GRAPH_CUSTOM.aliases[id];
+  graphState.options.selectedId=null;
+  if(graphState.options.focusId===id)graphState.options.focusId=null;
+  closeGraphModal("graphEditorModal");
+  refreshAfterGraphEdit("Nodo y conexiones retirados.");
+}
+function suggestGraphRelation(){
+  const sourceId=document.getElementById("graphConnectionSource")?.value;
+  const targetId=document.getElementById("graphConnectionTarget")?.value;
+  if(!sourceId||!targetId)return;
+  const nodes=new Map(graphAllEditorNodes().map(n=>[n.id,n]));
+  const relation=graphRelationAuto(nodes.get(sourceId)?.type,nodes.get(targetId)?.type);
+  const select=document.getElementById("graphConnectionRelation");
+  if(select)select.value=relation;
+}
+function addGraphConnectionFromEditor(){
+  const source=document.getElementById("graphConnectionSource")?.value||"";
+  const target=document.getElementById("graphConnectionTarget")?.value||"";
+  const relation=document.getElementById("graphConnectionRelation")?.value||"manual";
+  const date=graphLocalDateToPE(document.getElementById("graphConnectionDate")?.value||"");
+  const note=(document.getElementById("graphConnectionNote")?.value||"").trim();
+  if(!source||!target){toast("Selecciona el origen y el destino.");return}
+  if(source===target){toast("El origen y el destino deben ser diferentes.");return}
+
+  GRAPH_CUSTOM.edges.push({
+    id:graphUid("link"),source,target,relation,date,note,createdAt:new Date().toISOString()
+  });
+  const noteInput=document.getElementById("graphConnectionNote");
+  if(noteInput)noteInput.value="";
+  const dateInput=document.getElementById("graphConnectionDate");
+  if(dateInput)dateInput.value=graphDatetimeLocalNow();
+  refreshAfterGraphEdit("Conexión agregada con su fecha.");
+}
+function removeCustomConnection(id){
+  const item=GRAPH_CUSTOM.edges.find(e=>e.id===id);
+  if(!item)return;
+  if(!confirm("¿Eliminar esta conexión manual?"))return;
+  GRAPH_CUSTOM.edges=GRAPH_CUSTOM.edges.filter(e=>e.id!==id);
+  refreshAfterGraphEdit("Conexión manual eliminada.");
+}
+function openGraphRelationDetails(edgeId){
+  const edge=graphState.fullNet?.edges?.find(e=>e.id===edgeId)||graphState.visibleNet?.edges?.find(e=>e.id===edgeId);
+  if(!edge)return;
+  const byId=new Map((graphState.fullNet?.nodes||[]).map(n=>[n.id,n]));
+  const source=byId.get(edge.source),target=byId.get(edge.target);
+  const events=(edge.events||[]).slice().sort((a,b)=>parseDatePE(b.date)-parseDatePE(a.date));
+  const groups=new Map();
+  events.forEach(event=>{
+    const key=graphDateKey(event.date);
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(event);
+  });
+
+  const body=document.getElementById("graphRelationBody");
+  if(body){
+    const groupsHtml=[...groups.entries()].map(([date,items])=>`
+      <div class="relation-date-group">
+        <div class="relation-date-head"><b>${esc(date)}</b><span>${items.length} evento${items.length===1?"":"s"}</span></div>
+        ${items.map(event=>`
+          <div class="relation-event">
+            <div>
+              <b>${esc(graphFormatTimeInput(event.date)||"Hora no registrada")} · ${esc(event.kind||graphRelationText(edge.relation))}</b>
+              <p>${event.sourceType==="custom"?"Agregada manualmente":"Procedente de un registro cargado"}${event.note?` · ${esc(event.note)}`:""}</p>
+            </div>
+            <button class="red" type="button" onclick="removeGraphRelationEvent('${esc(edge.id)}','${esc(event.id)}')">Eliminar</button>
+          </div>`).join("")}
+      </div>`).join("");
+
+    body.innerHTML=`
+      <div class="relation-summary">
+        <div><b>${esc(source?.label||edge.source)} ↔ ${esc(target?.label||edge.target)}</b><span>${esc(graphRelationText(edge.relation))} · ${events.length} evento${events.length===1?"":"s"}</span></div>
+        <button class="light" type="button" onclick="closeGraphModal('graphRelationModal');openGraphEditor('connection')">Administrar</button>
+      </div>
+      <div class="relation-date-groups">${groupsHtml||'<div class="empty">La conexión no tiene fechas registradas.</div>'}</div>
+      <div class="mini-warning">Al eliminar un evento procedente de un archivo se elimina el registro completo que originó esa relación. Las demás filas permanecen intactas.</div>`;
+  }
+
+  const deleteBtn=document.getElementById("deleteWholeRelationBtn");
+  if(deleteBtn)deleteBtn.onclick=()=>deleteWholeGraphRelation(edge.id);
+  const modal=document.getElementById("graphRelationModal");
+  if(modal){modal.classList.add("show");modal.setAttribute("aria-hidden","false")}
+}
+function removeGraphRelationEvent(edgeId,eventId){
+  const edge=graphState.fullNet?.edges?.find(e=>e.id===edgeId);
+  const event=edge?.events?.find(e=>e.id===eventId);
+  if(!event)return;
+  if(event.sourceType==="custom"){
+    if(!confirm("¿Eliminar este evento manual?"))return;
+    GRAPH_CUSTOM.edges=GRAPH_CUSTOM.edges.filter(e=>e.id!==event.customEdgeId);
+  }else{
+    if(!confirm("Este evento proviene de una fila cargada. ¿Eliminar esa fila de la base local?"))return;
+    DB=DB.filter(r=>keyRecord(r)!==event.recordKey);
+  }
+  closeGraphModal("graphRelationModal");
+  refreshAfterGraphEdit("Evento eliminado.");
+}
+function deleteWholeGraphRelation(edgeId){
+  const edge=graphState.fullNet?.edges?.find(e=>e.id===edgeId);
+  if(!edge)return;
+  if(!confirm(`¿Eliminar la conexión completa y sus ${edge.events?.length||0} eventos?`))return;
+  const customIds=new Set((edge.events||[]).filter(e=>e.sourceType==="custom").map(e=>e.customEdgeId));
+  const recordKeys=new Set((edge.events||[]).filter(e=>e.sourceType==="base").map(e=>e.recordKey));
+  GRAPH_CUSTOM.edges=GRAPH_CUSTOM.edges.filter(e=>!customIds.has(e.id));
+  DB=DB.filter(r=>!recordKeys.has(keyRecord(r)));
+  closeGraphModal("graphRelationModal");
+  refreshAfterGraphEdit("Conexión completa eliminada.");
+}
+
+/* Reinicio también limpia ediciones del grafo. */
+resetAll = function(){
+  if(confirm("¿Deseas borrar la base local, las ediciones del grafo y dejar la página en blanco?")){
+    DB=[];CURRENT=[];CURRENT_QUERY="";GRAPH_MODE="empty";
+    GRAPH_CUSTOM={nodes:[],edges:[],aliases:{}};
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEY+"_last");
+    localStorage.removeItem(GRAPH_CUSTOM_KEY);
+    graphState.options.selectedId=null;
+    graphState.options.focusId=null;
+    updateStats();renderAll([],"");
+    toast("Base y ediciones del grafo eliminadas.");
+  }
+};
+
+/* Inicialización */
+installGraphUpgradeUI();
+graphState.options.showDates=true;
+if(DB.length&&!CURRENT.length){
+  CURRENT=DB.slice();
+  GRAPH_MODE="all";
+  renderAll(CURRENT,"");
+}else{
+  renderGraph(CURRENT,CURRENT_QUERY);
+}
+</script>
+
 </body>
 </html>
