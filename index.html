@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Área de Análisis de Inteligencia - DIVINCRI La Libertad</title>
   <meta name="description" content="Análisis relacional editable de números, IMEI, DNI, personas y operadoras, con fechas visibles en las vinculaciones.">
-  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=WnrZtMu-KhjfbkpZHJBVuGqWSvD2obJCH9zD5EyUUJEWDTTa_Jbo9xQ3K2qmk5XvaUwEpY5kS8hupqyYDjATzZVkl9NUp_6LWw10rfQTpds8K8AZfM0Ro03XtyUQVTQDCdQheMK9tg-eyIAusa9sWOW3qa4KCN_k7ZJzQw1vCllhWu9SgunrvEPc_7HKoz31kMeLzKjc88o93Q9fP24hy6743nrZ-nQEwLySFGBTQAGnEDXclhCoqLS4MiHZUQP-czgSna8YvtCZ51pIHvH6o_Gyar3bEdEmnH9x41h_8baMOLxaA-Scm4P_LjwoKS3v" charset="UTF-8"></script><script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -125,7 +125,7 @@
 
         <div class="view active" id="graphView">
           <div class="graph-head">
-            <div class="graph-title"><b>Mapa relacional inteligente y editable</b><span>Los enlaces muestran la fecha de la vinculación y pueden editarse directamente.</span></div>
+            <div class="graph-title"><b>Mapa relacional ordenado, estable y editable</b><span>El objetivo permanece en rojo, los nodos no se mueven solos y las fechas siguen visibles en cada vínculo.</span></div>
             <div class="graph-counts"><span class="pill" id="graphNodeCount">0 nodos</span><span class="pill" id="graphEdgeCount">0 vínculos</span><span class="pill" id="graphDateCount">0 con fecha</span></div>
           </div>
           <div class="controls">
@@ -151,7 +151,7 @@
           <div id="graphWrap">
             <svg id="graph" aria-label="Grafo de vinculaciones"></svg>
             <div class="graph-empty" id="graphEmpty"><div class="empty-card"><b>Sin información para graficar</b><span>Carga un archivo, pega datos o agrega un registro manual. Las fechas de cada registro aparecerán en sus enlaces.</span></div></div>
-            <div class="graph-help"><b>Edición:</b> haz clic sobre una entidad, una línea o la etiqueta amarilla de fecha. Doble clic o clic derecho abre la edición. Supr/Delete elimina la selección. Arrastra las entidades y los textos para ordenarlos.</div>
+            <div class="graph-help"><b>Distribución fija:</b> el gráfico ya no se mueve solo. El número objetivo aparece en rojo. Haz clic para seleccionar; doble clic para convertir una entidad en objetivo. También puedes arrastrar nodos y usar <b>Reordenar</b> para recuperar la distribución automática.</div>
           </div>
           <div class="legend"><span><i class="dot objective"></i>Objetivo</span><span><i class="dot numero"></i>Número</span><span><i class="dot imei"></i>IMEI</span><span><i class="dot dni"></i>DNI</span><span><i class="dot persona"></i>Persona</span><span><i class="dot operadora"></i>Operadora</span><span><i class="dot custom"></i>Manual</span></div>
           <div class="detail-strip"><div class="detail-card" id="selectedDetail"><h3>Detalle de selección</h3><p>Selecciona una entidad, vínculo o texto del gráfico.</p></div><div class="detail-card" id="dateDetail"><h3>Fechas de vinculación</h3><p>Las fechas del enlace seleccionado aparecerán aquí.</p></div></div>
@@ -184,7 +184,7 @@
       {numero:"926014324",imei:"864050055985357",dni:"45579415",nombre:"PERSONA DE PRUEBA 04",operadora:"CLARO",tipo:"Vinculación técnica",fecha_hora:"14/04/2026 09:05",observacion:"Registro demostrativo"},
       {numero:"938688287",imei:"864050055985357",dni:"76366071",nombre:"PERSONA DE PRUEBA 05",operadora:"ENTEL",tipo:"Vinculación técnica",fecha_hora:"18/04/2026 21:10",observacion:"Registro demostrativo"}
     ];
-    const emptyEdits=()=>({hiddenNodes:[],hiddenEdges:[],nodeOverrides:{},edgeOverrides:{},customNodes:[],customEdges:[],annotations:[]});
+    const emptyEdits=()=>({hiddenNodes:[],hiddenEdges:[],nodeOverrides:{},edgeOverrides:{},customNodes:[],customEdges:[],annotations:[],positions:{}});
     let records=[];let edits=emptyEdits();let graphData={nodes:[],edges:[]};let filteredGraph={nodes:[],edges:[]};
     let selected=null;let objectiveId=null;let graphMode="all";let enabledTypes=new Set(["numero","imei","dni","persona","operadora","custom"]);let currentModal=null;
     let simulation=null,svg=null,rootG=null,zoomBehavior=null,currentTransform=d3.zoomIdentity;
@@ -275,8 +275,88 @@
       $("mReg").textContent=records.length;$("mNum").textContent=count("numero");$("mImei").textContent=count("imei");$("mDni").textContent=count("dni");$("mPer").textContent=count("persona");$("mLinks").textContent=graphData.edges.length;$("graphNodeCount").textContent=`${filteredGraph.nodes.length} nodos`;$("graphEdgeCount").textContent=`${filteredGraph.edges.length} vínculos`;$("graphDateCount").textContent=`${dated} con fecha`;
     }
 
+    function getOrderedObjective(nodes){
+      let target=nodes.find(n=>n.id===objectiveId);
+      if(!target){
+        const numbers=nodes.filter(n=>n.type==="numero").sort((a,b)=>(b.degree||0)-(a.degree||0)||a.label.localeCompare(b.label,"es"));
+        target=numbers[0]||[...nodes].sort((a,b)=>(b.degree||0)-(a.degree||0)||a.label.localeCompare(b.label,"es"))[0]||null;
+        if(target)objectiveId=target.id;
+      }
+      return target;
+    }
+
+    function applyOrderedLayout(nodes,edges,w,h){
+      const target=getOrderedObjective(nodes);
+      if(!target)return {target:null,maxLayer:0};
+      const byId=new Map(nodes.map(n=>[n.id,n]));
+      const adjacency=new Map(nodes.map(n=>[n.id,[]]));
+      edges.forEach(e=>{
+        const s=typeof e.source==="object"?e.source.id:e.source;
+        const t=typeof e.target==="object"?e.target.id:e.target;
+        if(adjacency.has(s)&&adjacency.has(t)){adjacency.get(s).push(t);adjacency.get(t).push(s)}
+      });
+
+      const distance=new Map([[target.id,0]]),queue=[target.id];
+      while(queue.length){
+        const id=queue.shift(),next=(distance.get(id)||0)+1;
+        (adjacency.get(id)||[]).sort().forEach(other=>{
+          if(!distance.has(other)){distance.set(other,next);queue.push(other)}
+        });
+      }
+
+      const finite=[...distance.values()];
+      const maxFinite=finite.length?Math.max(...finite):0;
+      nodes.forEach(n=>{if(!distance.has(n.id))distance.set(n.id,maxFinite+1)});
+      const maxLayer=Math.max(...nodes.map(n=>distance.get(n.id)||0));
+      const cx=w*.5,cy=h*.5;
+      target.x=cx;target.y=cy;target.layoutLayer=0;
+
+      const angleByType={
+        imei:-Math.PI/2,
+        operadora:0,
+        custom:Math.PI/4,
+        numero:Math.PI/2,
+        persona:Math.PI*1.17,
+        dni:Math.PI*.86
+      };
+      const typeOrder={imei:0,dni:1,persona:2,numero:3,custom:4,operadora:5};
+      const minSide=Math.max(560,Math.min(w,h));
+
+      for(let layer=1;layer<=maxLayer;layer++){
+        const layerNodes=nodes.filter(n=>(distance.get(n.id)||0)===layer);
+        const grouped=new Map();
+        layerNodes.forEach(n=>{if(!grouped.has(n.type))grouped.set(n.type,[]);grouped.get(n.type).push(n)});
+        [...grouped.entries()].sort((a,b)=>(typeOrder[a[0]]??99)-(typeOrder[b[0]]??99)).forEach(([type,group])=>{
+          group.sort((a,b)=>(b.degree||0)-(a.degree||0)||a.label.localeCompare(b.label,"es"));
+          const centerAngle=angleByType[type]??(-Math.PI/2);
+          const perArc=6;
+          group.forEach((n,i)=>{
+            const band=Math.floor(i/perArc),index=i%perArc,countInBand=Math.min(perArc,group.length-band*perArc);
+            const spread=countInBand<=1?0:Math.min(1.45,.30*(countInBand-1));
+            const angle=countInBand<=1?centerAngle:centerAngle-spread/2+(spread*index/(countInBand-1));
+            const baseRadius=Math.max(175,Math.min(250,minSide*.28))+(layer-1)*185;
+            const radius=baseRadius+band*92;
+            n.x=cx+Math.cos(angle)*radius;
+            n.y=cy+Math.sin(angle)*radius;
+            n.layoutLayer=layer;
+          });
+        });
+      }
+
+      const positions=edits.positions||{};
+      nodes.forEach(n=>{
+        const p=positions[n.id];
+        if(p){
+          n.x=p.normalized?p.x*w:p.x;
+          n.y=p.normalized?p.y*h:p.y;
+        }
+      });
+      return {target,maxLayer};
+    }
+
     function renderGraph(){
       const wrap=$("graphWrap"),w=wrap.clientWidth||900,h=wrap.clientHeight||690;
+      if(simulation){simulation.stop();simulation=null}
       svg=d3.select("#graph");
       svg.selectAll("*").remove();
       $("graphEmpty").style.display=filteredGraph.nodes.length?"none":"grid";
@@ -285,24 +365,23 @@
       svg.attr("viewBox",`0 0 ${w} ${h}`);
       const defs=svg.append("defs");
       defs.append("filter").attr("id","shadow").html('<feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.18"/>');
+      defs.append("filter").attr("id","objectiveGlow").html('<feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#c12b39" flood-opacity="0.5"/>');
       rootG=svg.append("g");
-      zoomBehavior=d3.zoom().scaleExtent([.22,4]).on("zoom",ev=>{currentTransform=ev.transform;rootG.attr("transform",ev.transform)});
+      zoomBehavior=d3.zoom().scaleExtent([.18,4]).on("zoom",ev=>{currentTransform=ev.transform;rootG.attr("transform",ev.transform)});
       svg.call(zoomBehavior).on("dblclick.zoom",null);
 
       const nodes=filteredGraph.nodes,edges=filteredGraph.edges;
+      const layoutInfo=applyOrderedLayout(nodes,edges,w,h);
       const nodeById=new Map(nodes.map(n=>[n.id,n]));
       edges.forEach(e=>{
         e.source=nodeById.get(typeof e.source==="object"?e.source.id:e.source);
         e.target=nodeById.get(typeof e.target==="object"?e.target.id:e.target);
       });
 
-      const xTargets={dni:w*.17,persona:w*.12,numero:w*.42,imei:w*.68,operadora:w*.88,custom:w*.52};
-      simulation=d3.forceSimulation(nodes)
-        .force("link",d3.forceLink(edges).id(d=>d.id).distance(d=>118+Math.min(90,d.count*8)).strength(.52))
-        .force("charge",d3.forceManyBody().strength(-470))
-        .force("collision",d3.forceCollide().radius(52))
-        .force("x",d3.forceX(d=>xTargets[d.type]||w*.5).strength(.28))
-        .force("y",d3.forceY(h*.48).strength(.08));
+      const guides=rootG.append("g").attr("class","layout-guides").attr("pointer-events","none");
+      if(layoutInfo.target){
+        guides.append("circle").attr("cx",layoutInfo.target.x).attr("cy",layoutInfo.target.y).attr("r",98).attr("fill","rgba(193,43,57,.025)").attr("stroke","rgba(193,43,57,.12)").attr("stroke-dasharray","4 7");
+      }
 
       const edgeG=rootG.append("g").attr("class","edges").selectAll("g")
         .data(edges,d=>d.id).join("g").attr("class","edge-item");
@@ -330,8 +409,8 @@
         .on("click",(ev,d)=>{ev.stopPropagation();selectItem("edge",d.id)})
         .on("dblclick",(ev,d)=>{ev.stopPropagation();selectItem("edge",d.id);openModal("editEdge",getSelectedObject())})
         .on("contextmenu",(ev,d)=>{ev.preventDefault();ev.stopPropagation();selectItem("edge",d.id);openModal("editEdge",getSelectedObject())});
-      relationG.append("rect").attr("rx",6).attr("fill","rgba(255,255,255,.96)").attr("stroke","#d7e2da");
-      relationG.append("text").attr("text-anchor","middle").attr("font-size",8).attr("font-weight",900).attr("fill","#344d3f").text(d=>shortLabel(d.relation,28));
+      relationG.append("rect").attr("rx",6).attr("fill","rgba(255,255,255,.97)").attr("stroke","#d7e2da");
+      relationG.append("text").attr("text-anchor","middle").attr("font-size",7.5).attr("font-weight",900).attr("fill","#344d3f").text(d=>shortLabel(d.relation,24));
       fitLabelRects(relationG,5,3);
 
       const dateG=edgeG.append("g")
@@ -341,34 +420,39 @@
         .on("click",(ev,d)=>{ev.stopPropagation();selectItem("edge",d.id)})
         .on("dblclick",(ev,d)=>{ev.stopPropagation();selectItem("edge",d.id);openModal("editEdge",getSelectedObject())})
         .on("contextmenu",(ev,d)=>{ev.preventDefault();ev.stopPropagation();selectItem("edge",d.id);openModal("editEdge",getSelectedObject())});
-      dateG.append("rect").attr("class","date-card").attr("rx",9);
-      dateG.append("rect").attr("class","date-icon-bg").attr("x",-9).attr("y",-8).attr("width",18).attr("height",16).attr("rx",4);
-      dateG.append("path").attr("class","date-icon-line").attr("d","M-5,-3 H5 M-4,-6 V-3 M4,-6 V-3 M-5,0 H5 M-5,3 H1");
+      dateG.append("rect").attr("class","date-card").attr("rx",8);
+      dateG.append("rect").attr("class","date-icon-bg").attr("x",-8).attr("y",-7).attr("width",16).attr("height",14).attr("rx",4);
+      dateG.append("path").attr("class","date-icon-line").attr("d","M-4,-2.5 H4 M-3.5,-5 V-2.5 M3.5,-5 V-2.5 M-4,0 H4 M-4,2.7 H1");
       dateG.append("text")
         .attr("class","date-text")
         .attr("text-anchor","start")
-        .attr("x",14)
-        .attr("dy",3.4)
+        .attr("x",12)
+        .attr("dy",3)
+        .attr("font-size",8.5)
         .text(d=>edgeDateLabel(d));
       fitDateLabelRects(dateG);
 
       const nodeG=rootG.append("g").attr("class","nodes").selectAll("g")
         .data(nodes,d=>d.id).join("g").attr("class","node-item").style("cursor","pointer")
         .call(d3.drag().on("start",dragstarted).on("drag",dragged).on("end",dragended))
-        .on("click",(ev,d)=>{ev.stopPropagation();objectiveId=d.id;selectItem("node",d.id)})
-        .on("dblclick",(ev,d)=>{ev.stopPropagation();objectiveId=d.id;graphMode="direct";syncModeButtons();applyGraphFilters()})
-        .on("contextmenu",(ev,d)=>{ev.preventDefault();ev.stopPropagation();objectiveId=d.id;selectItem("node",d.id);openModal("editNode",getSelectedObject())});
+        .on("click",(ev,d)=>{ev.stopPropagation();selectItem("node",d.id)})
+        .on("dblclick",(ev,d)=>{ev.stopPropagation();objectiveId=d.id;selectItem("node",d.id);graphMode="direct";syncModeButtons();applyGraphFilters()})
+        .on("contextmenu",(ev,d)=>{ev.preventDefault();ev.stopPropagation();selectItem("node",d.id);openModal("editNode",getSelectedObject())});
+
+      nodeG.filter(d=>d.id===objectiveId).append("circle")
+        .attr("class","objective-halo").attr("r",35).attr("fill","rgba(193,43,57,.11)").attr("stroke","#c12b39").attr("stroke-width",2).attr("stroke-dasharray","4 4").attr("filter","url(#objectiveGlow)");
 
       nodeG.append("circle")
+        .attr("class","node-core")
         .attr("r",d=>d.id===objectiveId?28:24)
         .attr("fill",d=>d.id===objectiveId?"#c12b39":typeColors[d.type]||typeColors.custom)
         .attr("stroke","#fff").attr("stroke-width",3).attr("filter","url(#shadow)");
 
       const phoneG=nodeG.filter(d=>d.type==="numero").append("g").attr("class","phone-device");
       phoneG.append("rect").attr("x",-9).attr("y",-14).attr("width",18).attr("height",28).attr("rx",4).attr("fill","#fff").attr("stroke","rgba(255,255,255,.72)").attr("stroke-width",1.2);
-      phoneG.append("rect").attr("x",-6.6).attr("y",-9.7).attr("width",13.2).attr("height",17.8).attr("rx",1.4).attr("fill","#1769aa");
-      phoneG.append("line").attr("x1",-2.6).attr("x2",2.6).attr("y1",-11.6).attr("y2",-11.6).attr("stroke","#1769aa").attr("stroke-width",1.4).attr("stroke-linecap","round");
-      phoneG.append("circle").attr("cx",0).attr("cy",11).attr("r",1.35).attr("fill","#1769aa");
+      phoneG.append("rect").attr("x",-6.6).attr("y",-9.7).attr("width",13.2).attr("height",17.8).attr("rx",1.4).attr("fill",d=>d.id===objectiveId?"#c12b39":"#1769aa");
+      phoneG.append("line").attr("x1",-2.6).attr("x2",2.6).attr("y1",-11.6).attr("y2",-11.6).attr("stroke",d=>d.id===objectiveId?"#c12b39":"#1769aa").attr("stroke-width",1.4).attr("stroke-linecap","round");
+      phoneG.append("circle").attr("cx",0).attr("cy",11).attr("r",1.35).attr("fill",d=>d.id===objectiveId?"#c12b39":"#1769aa");
       phoneG.append("path").attr("d","M-4,4 V2 M-1,4 V0 M2,4 V-2 M5,4 V-5").attr("stroke","#fff").attr("stroke-width",1.2).attr("stroke-linecap","round").attr("fill","none");
 
       nodeG.filter(d=>d.type!=="numero").append("text")
@@ -376,11 +460,12 @@
         .attr("font-size",d=>d.type==="dni"||d.type==="operadora"?8:13).attr("font-weight",950)
         .text(d=>typeIcons[d.type]||"+");
 
-      nodeG.append("text").attr("class","node-type").attr("text-anchor","middle").attr("y",-34)
-        .attr("fill",d=>typeColors[d.type]||"#596b60").attr("font-size",7).attr("font-weight",950).text(d=>d.type.toUpperCase());
+      nodeG.append("text").attr("class","node-type").attr("text-anchor","middle").attr("y",-38)
+        .attr("fill",d=>d.id===objectiveId?"#c12b39":typeColors[d.type]||"#596b60").attr("font-size",d=>d.id===objectiveId?8:7).attr("font-weight",950)
+        .text(d=>d.id===objectiveId?(d.type==="numero"?"NÚMERO OBJETIVO":`OBJETIVO · ${d.type.toUpperCase()}`):d.type.toUpperCase());
       nodeG.append("text").attr("class","node-label").style("display",$("showLabels").checked?null:"none")
-        .attr("text-anchor","middle").attr("y",40).attr("fill","#253d30").attr("font-size",9).attr("font-weight",900).text(d=>shortLabel(d.label,20));
-      nodeG.append("title").text(d=>`${d.type.toUpperCase()}: ${d.label}\nVínculos: ${d.degree}\nFechas: ${(d.dates||[]).join(", ")||"Sin fecha"}`);
+        .attr("text-anchor","middle").attr("y",42).attr("fill",d=>d.id===objectiveId?"#9d1f2d":"#253d30").attr("font-size",d=>d.id===objectiveId?10:9).attr("font-weight",950).text(d=>shortLabel(d.label,22));
+      nodeG.append("title").text(d=>`${d.id===objectiveId?"OBJETIVO · ":""}${d.type.toUpperCase()}: ${d.label}\nVínculos: ${d.degree}\nFechas: ${(d.dates||[]).join(", ")||"Sin fecha"}`);
 
       const annG=rootG.append("g").attr("class","annotations").selectAll("g")
         .data(edits.annotations.filter(a=>!a.hidden),d=>d.id).join("g").attr("class","annotation-item").style("cursor","move")
@@ -391,18 +476,18 @@
       annG.append("rect").attr("x",-75).attr("y",-24).attr("width",150).attr("height",48).attr("rx",9).attr("fill","#fff8d9").attr("stroke","#d4a52f").attr("filter","url(#shadow)");
       annG.append("text").attr("text-anchor","middle").attr("fill","#654b10").attr("font-size",9).attr("font-weight",800).each(function(d){wrapSvgText(d3.select(this),d.text,0,-5,22)});
 
-      svg.on("click",()=>clearSelection());
-      simulation.on("tick",()=>{
+      function labelPoint(d,offset){
+        const mx=(d.source.x+d.target.x)/2,my=(d.source.y+d.target.y)/2;
+        const dx=d.target.x-d.source.x,dy=d.target.y-d.source.y,len=Math.max(1,Math.hypot(dx,dy));
+        return {x:mx+(-dy/len)*offset,y:my+(dx/len)*offset};
+      }
+      function updateGraphPositions(){
         edgeG.selectAll("line").attr("x1",d=>d.source.x).attr("y1",d=>d.source.y).attr("x2",d=>d.target.x).attr("y2",d=>d.target.y);
-        relationG.attr("transform",d=>`translate(${(d.source.x+d.target.x)/2},${(d.source.y+d.target.y)/2-16})`);
-        dateG.attr("transform",d=>`translate(${(d.source.x+d.target.x)/2},${(d.source.y+d.target.y)/2+16})`);
+        relationG.attr("transform",d=>{const p=labelPoint(d,-13);return `translate(${p.x},${p.y})`});
+        dateG.attr("transform",d=>{const p=labelPoint(d,14);return `translate(${p.x},${p.y})`});
         nodeG.attr("transform",d=>`translate(${d.x},${d.y})`);
-      });
-
-      setTimeout(()=>centerGraph(false),700);
-      updateSelectionStyles();
-      updateMetrics();
-
+        guides.selectAll("circle").attr("cx",layoutInfo.target?.x||w/2).attr("cy",layoutInfo.target?.y||h/2);
+      }
       function fitLabelRects(groups,padX,padY){
         groups.each(function(){
           const g=d3.select(this),node=g.select("text").node();
@@ -416,13 +501,24 @@
           const g=d3.select(this),node=g.select(".date-text").node();
           if(!node)return;
           const bb=node.getBBox();
-          const left=-14,right=bb.x+bb.width+8,top=Math.min(-11,bb.y-5),bottom=Math.max(11,bb.y+bb.height+5);
+          const left=-13,right=bb.x+bb.width+7,top=Math.min(-10,bb.y-4),bottom=Math.max(10,bb.y+bb.height+4);
           g.select(".date-card").attr("x",left).attr("y",top).attr("width",right-left).attr("height",bottom-top);
         });
       }
-      function dragstarted(ev,d){if(!ev.active)simulation.alphaTarget(.25).restart();d.fx=d.x;d.fy=d.y}
-      function dragged(ev,d){d.fx=ev.x;d.fy=ev.y}
-      function dragended(ev,d){if(!ev.active)simulation.alphaTarget(0);d.fx=ev.x;d.fy=ev.y}
+      function dragstarted(ev,d){d3.select(this).raise().classed("dragging",true)}
+      function dragged(ev,d){d.x=ev.x;d.y=ev.y;updateGraphPositions()}
+      function dragended(ev,d){
+        d3.select(this).classed("dragging",false);
+        edits.positions=edits.positions||{};
+        edits.positions[d.id]={x:d.x/w,y:d.y/h,normalized:true};
+        saveStorage();
+      }
+
+      svg.on("click",()=>clearSelection());
+      updateGraphPositions();
+      requestAnimationFrame(()=>centerGraph(false));
+      updateSelectionStyles();
+      updateMetrics();
     }
     function edgeColor(d){if(/DNI|Identidad|Titular/i.test(d.relation))return "#c16a06";if(/Operadora/i.test(d.relation))return "#227989";return "#397d5d"}
     function edgeDateLabel(e){const dates=(e.dates||[]).filter(Boolean);if(!dates.length)return "SIN FECHA REGISTRADA";return dates.length===1?dates[0]:`${dates[0]}  (+${dates.length-1} fecha${dates.length>2?"s":""})`}
@@ -432,7 +528,7 @@
     function selectItem(kind,id){selected={kind,id};updateSelectionStyles();updateSelectionPanel()}
     function clearSelection(){selected=null;updateSelectionStyles();updateSelectionPanel()}
     function getSelectedObject(){if(!selected)return null;if(selected.kind==="node")return graphData.nodes.find(n=>n.id===selected.id);if(selected.kind==="edge")return graphData.edges.find(e=>e.id===selected.id);if(selected.kind==="annotation")return edits.annotations.find(a=>a.id===selected.id);return null}
-    function updateSelectionStyles(){if(!rootG)return;rootG.selectAll(".node-item circle").attr("stroke",d=>selected?.kind==="node"&&selected.id===d.id?"#f4bd27":"#fff").attr("stroke-width",d=>selected?.kind==="node"&&selected.id===d.id?5:3);rootG.selectAll(".edge-visible").attr("opacity",d=>selected?.kind==="edge"&&selected.id===d.id?1:.72).attr("stroke-width",d=>selected?.kind==="edge"&&selected.id===d.id?5:Math.min(4,1.5+Math.log2(d.count+1)));rootG.selectAll(".annotation-item rect").attr("stroke-width",d=>selected?.kind==="annotation"&&selected.id===d.id?3:1)}
+    function updateSelectionStyles(){if(!rootG)return;rootG.selectAll(".node-item .node-core").attr("stroke",d=>selected?.kind==="node"&&selected.id===d.id?"#f4bd27":"#fff").attr("stroke-width",d=>selected?.kind==="node"&&selected.id===d.id?5:3);rootG.selectAll(".edge-visible").attr("opacity",d=>selected?.kind==="edge"&&selected.id===d.id?1:.72).attr("stroke-width",d=>selected?.kind==="edge"&&selected.id===d.id?5:Math.min(4,1.5+Math.log2(d.count+1)));rootG.selectAll(".annotation-item rect").attr("stroke-width",d=>selected?.kind==="annotation"&&selected.id===d.id?3:1)}
     function updateSelectionPanel(){
       const obj=getSelectedObject(),edit=$("btnEditSelected"),del=$("btnDeleteSelected"),sideEdit=$("btnSideEdit"),sideDel=$("btnSideDelete");edit.disabled=!obj;del.disabled=!obj;if(sideEdit)sideEdit.disabled=!obj;if(sideDel)sideDel.disabled=!obj;$("selectionLabel").innerHTML=`Selección: <b>${obj?esc(selected.kind+" · "+(obj.label||obj.relation||obj.text||obj.id)):"ninguna — haz clic en un nodo, línea o fecha"}</b>`;
       if(!obj){$("selectedDetail").innerHTML="<h3>Detalle de selección</h3><p>Selecciona una entidad, vínculo o texto del gráfico.</p>";$("dateDetail").innerHTML="<h3>Fechas de vinculación</h3><p>Las fechas del enlace seleccionado aparecerán aquí.</p>";return}
@@ -499,7 +595,7 @@
 
     function loadDemo(){
       if(records.length&&!confirm("¿Reemplazar la base actual por el ejemplo de prueba?"))return;
-      records=DEMO_RECORDS.map(r=>normalizeRecord({...r,id:uid("demo")},"ejemplo"));edits=emptyEdits();objectiveId=entityId("imei","864050055985357");selected=null;graphMode="all";syncModeButtons();saveAndRefresh("Ejemplo cargado: las fechas ya aparecen sobre cada vínculo.");setView("graphView");
+      records=DEMO_RECORDS.map(r=>normalizeRecord({...r,id:uid("demo")},"ejemplo"));edits=emptyEdits();objectiveId=entityId("numero","917921152");selected=null;graphMode="all";syncModeButtons();saveAndRefresh("Ejemplo cargado: las fechas ya aparecen sobre cada vínculo.");setView("graphView");
     }
     function blankBase(){
       if((records.length||graphData.nodes.length)&&!confirm("¿Dejar la base completamente en blanco?"))return;records=[];edits=emptyEdits();objectiveId=null;selected=null;saveAndRefresh("Base en blanco lista para trabajar.");
@@ -523,7 +619,7 @@
     document.querySelectorAll(".mode-btn").forEach(b=>b.onclick=()=>{graphMode=b.dataset.mode;syncModeButtons();applyGraphFilters()});
     document.querySelectorAll(".type-chip").forEach(b=>b.onclick=()=>{enabledTypes.has(b.dataset.type)?enabledTypes.delete(b.dataset.type):enabledTypes.add(b.dataset.type);syncTypeButtons();applyGraphFilters()});
     $("showDates").onchange=renderGraph;$("showLabels").onchange=()=>{document.querySelectorAll(".node-label,.edge-relation-label").forEach(el=>el.style.display=$("showLabels").checked?"":"none")};
-    $("btnCenter").onclick=()=>centerGraph();$("btnReorder").onclick=renderGraph;$("btnPNG").onclick=exportPNG;$("btnExpand").onclick=()=>{const el=$("graphView");if(!document.fullscreenElement)el.requestFullscreen?.();else document.exitFullscreen?.()};
+    $("btnCenter").onclick=()=>centerGraph();$("btnReorder").onclick=()=>{edits.positions={};saveStorage();renderGraph();toast("Gráfico reordenado y fijado.")};$("btnPNG").onclick=exportPNG;$("btnExpand").onclick=()=>{const el=$("graphView");if(!document.fullscreenElement)el.requestFullscreen?.();else document.exitFullscreen?.()};
     $("btnEditSelected").onclick=editSelected;$("btnDeleteSelected").onclick=deleteSelected;$("btnAddNode").onclick=()=>openModal("addNode",{});$("btnAddEdge").onclick=()=>graphData.nodes.length>=2?openModal("addEdge",{}):toast("Primero agrega al menos dos entidades.");$("btnAddText").onclick=()=>openModal("addText",{});$("btnUndoEdit").onclick=restoreGraph;
     $("btnSideAddNode").onclick=()=>openModal("addNode",{});$("btnSideAddEdge").onclick=()=>graphData.nodes.length>=2?openModal("addEdge",{}):toast("Primero agrega al menos dos entidades.");$("btnSideAddText").onclick=()=>openModal("addText",{});$("btnSideEdit").onclick=editSelected;$("btnSideDelete").onclick=deleteSelected;
     $("modalClose").onclick=closeModal;$("modalCancel").onclick=closeModal;$("modalSave").onclick=saveModal;$("editorModal").onclick=e=>{if(e.target===$("editorModal"))closeModal()};
