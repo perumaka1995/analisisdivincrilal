@@ -4422,5 +4422,204 @@ document.addEventListener("mouseover",function(e){
 </script>
 <!-- ================= FIN CORRECCION V4 ================= -->
 
+
+<!-- ================= V5 HISTORIAL FECHAS + DELETE TECLADO ================= -->
+<style>
+.link-history-box{
+ position:fixed;
+ z-index:999999;
+ display:none;
+ width:280px;
+ background:#fff;
+ border:1px solid #dbe5de;
+ border-radius:16px;
+ padding:14px;
+ box-shadow:0 20px 50px rgba(0,0,0,.25);
+ font-size:11px;
+}
+.link-history-box h4{
+ margin:0 0 10px;
+ color:#073d25;
+}
+.link-history-item{
+ padding:7px;
+ border-bottom:1px solid #edf2ee;
+ color:#526359;
+}
+.link-history-item:last-child{border:0}
+.delete-alert{
+ position:fixed;
+ z-index:999999;
+ left:50%;
+ top:50%;
+ transform:translate(-50%,-50%);
+ background:white;
+ padding:22px;
+ border-radius:18px;
+ border:1px solid #ddd;
+ box-shadow:0 30px 70px rgba(0,0,0,.3);
+ display:none;
+ text-align:center;
+}
+</style>
+
+<div id="linkHistoryBox" class="link-history-box"></div>
+
+<div id="deleteAlert" class="delete-alert">
+<h3>🗑 Eliminar elemento</h3>
+<p id="deleteText">¿Eliminar seleccionado?</p>
+<button onclick="confirmDeleteNode()">Eliminar</button>
+<button onclick="cancelDeleteNode()" class="light">Cancelar</button>
+</div>
+
+<script>
+
+let selectedDeleteNode=null;
+
+
+/* ================= HISTORIAL DE VINCULO ================= */
+
+function mostrarHistorialVinculo(event, link){
+
+ let fechas=[];
+
+ try{
+
+ fechas =
+ link.fechas ||
+ link.historial ||
+ link.dates ||
+ [];
+
+ }catch(e){}
+
+
+ if(!Array.isArray(fechas)){
+
+   fechas=[
+    link.fecha ||
+    link.fecha_hora ||
+    link.date ||
+    "Sin fecha"
+   ];
+
+ }
+
+
+ let box=document.getElementById("linkHistoryBox");
+
+ box.innerHTML=
+ "<h4>📅 HISTORIAL DEL VÍNCULO</h4>"+
+ fechas.map((f,i)=>
+ `<div class="link-history-item">
+ 📌 ${f}
+ </div>`).join("");
+
+ box.style.display="block";
+ box.style.left=(event.clientX+15)+"px";
+ box.style.top=(event.clientY+15)+"px";
+
+}
+
+
+document.addEventListener("mousemove",function(e){
+
+ let target=e.target;
+
+ if(target.dataset && target.dataset.fechas){
+
+   mostrarHistorialVinculo(e,target.dataset);
+
+ }else{
+
+   let box=document.getElementById("linkHistoryBox");
+
+   if(box) box.style.display="none";
+
+ }
+
+});
+
+
+/* ================= DELETE TECLADO ================= */
+
+document.addEventListener("keydown",function(e){
+
+ if(e.key==="Delete" || e.key==="Backspace"){
+
+   let activo=document.activeElement;
+
+   if(
+    activo &&
+    (
+     activo.tagName==="INPUT" ||
+     activo.tagName==="TEXTAREA" ||
+     activo.tagName==="SELECT"
+    )
+   ){
+    return;
+   }
+
+
+   if(window.intelNodeActual){
+
+    selectedDeleteNode=window.intelNodeActual;
+
+    document.getElementById("deleteText").innerHTML=
+    "¿Eliminar <b>"+
+    (
+    selectedDeleteNode.dataset.valor ||
+    selectedDeleteNode.dataset.id ||
+    "elemento"
+    )+
+    "</b>?";
+
+    document.getElementById("deleteAlert").style.display="block";
+
+   }
+
+ }
+
+});
+
+
+window.confirmDeleteNode=function(){
+
+ if(selectedDeleteNode){
+
+   let id=
+   selectedDeleteNode.dataset.id ||
+   selectedDeleteNode.getAttribute("data-id");
+
+
+   localStorage.setItem(
+    "deleted_"+id,
+    "true"
+   );
+
+
+   selectedDeleteNode.remove();
+
+
+   toast("Elemento eliminado");
+
+ }
+
+ document.getElementById("deleteAlert").style.display="none";
+
+};
+
+
+window.cancelDeleteNode=function(){
+
+ document.getElementById("deleteAlert").style.display="none";
+
+};
+
+
+</script>
+
+<!-- ================= FIN V5 ================= -->
+
 </body>
 </html>
