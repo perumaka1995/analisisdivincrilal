@@ -4072,5 +4072,195 @@ window.intelConnect=function(){
 </script>
 <!-- ================= FIN GRAFO V2 ================= -->
 
+
+<!-- ===== PALETA DE PRIORIDAD + GUIA USUARIO V3 ===== -->
+<style>
+.priority-modal{
+position:fixed;z-index:999999;display:none;
+right:25px;top:120px;width:330px;
+background:white;border:1px solid #dbe5de;
+border-radius:20px;padding:18px;
+box-shadow:0 25px 60px rgba(0,0,0,.25);
+font-family:Arial
+}
+.priority-modal h3{
+margin:0 0 15px;color:#073d25;font-size:15px
+}
+.priority-option{
+display:flex;align-items:center;gap:12px;
+padding:10px;border-radius:12px;
+border:1px solid #e0e8e2;
+margin-bottom:8px;cursor:pointer;
+font-weight:800;font-size:12px
+}
+.priority-option:hover{background:#f3f8f4}
+.color-dot{
+width:18px;height:18px;border-radius:50%
+}
+.guia-v3{
+margin:30px auto;
+max-width:1200px;
+background:white;
+border:1px solid #dbe5de;
+border-radius:22px;
+padding:30px;
+box-shadow:0 15px 40px rgba(0,0,0,.08)
+}
+.guia-v3 h2{color:#073d25}
+.guia-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+gap:15px
+}
+.guia-card{
+padding:18px;
+border-radius:15px;
+background:#f7faf8;
+border:1px solid #dbe5de
+}
+.guia-card b{color:#073d25}
+</style>
+
+<div id="priorityModal" class="priority-modal">
+<h3>🎨 Nivel de prioridad</h3>
+
+<div class="priority-option" onclick="setPriority('CRITICO','#b4232f')">
+<span class="color-dot" style="background:#b4232f"></span>
+🔴 Crítico
+</div>
+
+<div class="priority-option" onclick="setPriority('IMPORTANTE','#d97706')">
+<span class="color-dot" style="background:#d97706"></span>
+🟠 Importante
+</div>
+
+<div class="priority-option" onclick="setPriority('ANALISIS','#eab308')">
+<span class="color-dot" style="background:#eab308"></span>
+🟡 En análisis
+</div>
+
+<div class="priority-option" onclick="setPriority('CONFIRMADO','#16a34a')">
+<span class="color-dot" style="background:#16a34a"></span>
+🟢 Confirmado
+</div>
+
+<div class="priority-option" onclick="setPriority('INFORMACION','#2563eb')">
+<span class="color-dot" style="background:#2563eb"></span>
+🔵 Información
+</div>
+
+<div class="priority-option" onclick="setPriority('DESCARTADO','#555')">
+<span class="color-dot" style="background:#555"></span>
+⚫ Descartado
+</div>
+
+</div>
+
+
+<section class="guia-v3">
+
+<h2>🚀 Guía rápida de uso</h2>
+
+<div class="guia-grid">
+
+<div class="guia-card">
+<b>1️⃣ Cargar información</b>
+<p>
+Suba PDF, Excel, CSV o reportes.
+El sistema identifica DNI, teléfonos,
+IMEI, personas y ubicaciones.
+</p>
+</div>
+
+<div class="guia-card">
+<b>2️⃣ Crear análisis</b>
+<p>
+Revise la red de relaciones:
+personas, números, documentos
+y conexiones.
+</p>
+</div>
+
+<div class="guia-card">
+<b>3️⃣ Editar gráfico</b>
+<p>
+Clic derecho sobre un elemento:
+editar, eliminar, cambiar color,
+agregar notas o crear vínculos.
+</p>
+</div>
+
+<div class="guia-card">
+<b>4️⃣ Crear vínculos</b>
+<p>
+Seleccione nodo origen y destino.
+Defina tipo de relación, fecha
+y observación.
+</p>
+</div>
+
+<div class="guia-card">
+<b>5️⃣ Revisar prioridades</b>
+<p>
+Use colores:
+🔴 crítico,
+🟠 importante,
+🟢 confirmado.
+</p>
+</div>
+
+<div class="guia-card">
+<b>6️⃣ Generar informes</b>
+<p>
+Descargue análisis PDF
+y toda la información
+en Excel.
+</p>
+</div>
+
+</div>
+
+</section>
+
+
+<script>
+
+let selectedIntelNode=null;
+
+window.abrirPaleta=function(node){
+
+ selectedIntelNode=node;
+
+ document.getElementById("priorityModal").style.display="block";
+
+}
+
+
+window.setPriority=function(nombre,color){
+
+if(selectedIntelNode){
+
+selectedIntelNode.style.setProperty(
+"stroke",
+color
+);
+
+selectedIntelNode.dataset.priority=nombre;
+
+localStorage.setItem(
+"priority_"+Date.now(),
+nombre
+);
+
+}
+
+document.getElementById("priorityModal").style.display="none";
+
+}
+
+
+</script>
+<!-- ===== FIN V3 ===== -->
+
 </body>
 </html>
