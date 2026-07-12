@@ -4642,5 +4642,174 @@ window.cancelDeleteNode=function(){
 
 <!-- ================= FIN V5 ================= -->
 
+
+<!-- ================= FIX DEFINITIVO FECHAS + DELETE GRAFO V6 ================= -->
+<style>
+#linkHistoryBox{
+ max-height:360px;
+ overflow:auto;
+}
+</style>
+<script>
+(function(){
+
+// Obtiene todas las fechas posibles de cualquier estructura del grafo
+function fechasReales(edge){
+ let arr=[];
+
+ if(!edge) return arr;
+
+ const fuentes=[
+   edge.events,
+   edge.fechas,
+   edge.historial,
+   edge.dates
+ ];
+
+ fuentes.forEach(x=>{
+   if(Array.isArray(x)){
+     x.forEach(v=>{
+       if(typeof v==="object"){
+         arr.push(v.date||v.fecha||v.fecha_hora||v.timestamp||JSON.stringify(v));
+       }else arr.push(v);
+     });
+   }
+ });
+
+ [
+  edge.fecha,
+  edge.fecha_hora,
+  edge.fechaHora,
+  edge.date,
+  edge.timestamp
+ ].forEach(v=>{
+   if(v) arr.push(v);
+ });
+
+ return [...new Set(arr.filter(Boolean))];
+}
+
+
+window.mostrarTodasLasFechas=function(e,edge){
+
+ const fechas=fechasReales(edge);
+
+ const box=document.getElementById("linkHistoryBox");
+ if(!box)return;
+
+ box.innerHTML=
+ `<h4>📅 HISTORIAL DEL VÍNCULO (${fechas.length})</h4>`+
+ (fechas.length?
+ fechas.map((f,i)=>`<div class="link-history-item">📌 ${i+1}. ${f}</div>`).join("")
+ :
+ `<div class="link-history-item">Sin fechas registradas</div>`);
+
+ box.style.display="block";
+ box.style.left=(e.clientX+15)+"px";
+ box.style.top=(e.clientY+15)+"px";
+};
+
+
+// Busca la relación real cuando el usuario hace click encima de una línea
+document.addEventListener("click",function(e){
+
+ let el=e.target.closest(".link,.edge,.relation,.graph-link,.links path");
+
+ if(!el)return;
+
+ let edge=null;
+
+ const id=el.dataset.id || el.getAttribute("data-id");
+
+ if(id && window.graphState){
+   edge=
+   graphState.fullNet?.edges?.find(x=>x.id==id) ||
+   graphState.visibleNet?.edges?.find(x=>x.id==id);
+ }
+
+ // fallback por datos embebidos
+ if(!edge && el.__data__) edge=el.__data__;
+
+ if(edge){
+
+   const fechas=fechasReales(edge);
+
+   if(fechas.length>0){
+      mostrarTodasLasFechas(e,edge);
+   }
+
+ }
+
+});
+
+
+// También al pasar cursor por líneas SVG
+document.addEventListener("mouseover",function(e){
+
+ let el=e.target.closest(".link,.edge,.relation,.graph-link,.links path");
+
+ if(!el)return;
+
+ let edge=null;
+ const id=el.dataset.id || el.getAttribute("data-id");
+
+ if(window.graphState && id){
+   edge=
+   graphState.fullNet?.edges?.find(x=>x.id==id) ||
+   graphState.visibleNet?.edges?.find(x=>x.id==id);
+ }
+
+ if(edge){
+   const fechas=fechasReales(edge);
+   el.title="📅 "+(fechas.length?fechas.join("\n"):"Sin fechas");
+ }
+
+});
+
+
+// ELIMINAR CON TECLA SUPR
+document.addEventListener("keydown",function(e){
+
+ if(e.key!=="Delete" && e.key!=="Backspace")return;
+
+ const a=document.activeElement;
+ if(a && ["INPUT","TEXTAREA","SELECT"].includes(a.tagName))return;
+
+ let nodo=
+ window.intelNodeActual ||
+ window.selectedGraphNode ||
+ window.graphSelectedNode;
+
+ if(!nodo)return;
+
+ e.preventDefault();
+
+ const id=nodo.dataset?.id || nodo.getAttribute?.("data-id");
+
+ if(confirm("¿Eliminar elemento seleccionado?")){
+
+   if(id){
+      localStorage.setItem("deleted_"+id,"true");
+   }
+
+   nodo.remove();
+
+   window.intelNodeActual=null;
+
+   if(typeof renderAll==="function"){
+      try{renderAll(CURRENT,"");}catch(err){}
+   }
+
+   if(typeof toast==="function")
+      toast("Elemento eliminado con Suprimir");
+ }
+
+});
+
+
+})();
+</script>
+<!-- ================= FIN FIX V6 ================= -->
+
 </body>
 </html>
