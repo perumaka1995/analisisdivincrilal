@@ -1143,12 +1143,16 @@
     @media(max-width:760px){#graphWrap{height:590px}}
     @media(max-width:520px){#graphWrap{height:540px}}
 
+  
+    .graph-selection-copy b{font-weight:950}
+    .graph-selection-actions button:disabled{opacity:.42;cursor:not-allowed;filter:grayscale(.7);transform:none}
+
   </style>
 
 <!-- FIREBASE ANALYTICS DE ACTIVIDAD -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, doc, setDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /*
  PEGA AQUÍ LOS DATOS QUE TE ENTREGA FIREBASE
@@ -1178,9 +1182,16 @@ window.registrarActividad = async function(evento, datos={}){
 
   try{
 
+    let sesionActual = null;
+    try { sesionActual = JSON.parse(localStorage.getItem("DIVINCRI_USER_SESSION") || "null"); } catch(e) {}
+
     await addDoc(collection(db,"actividad"),{
 
       evento:evento,
+
+      usuario:sesionActual?.username || "SIN_IDENTIFICAR",
+
+      sesionId:sesionActual?.id || "",
 
       datos:datos,
 
@@ -1199,6 +1210,39 @@ window.registrarActividad = async function(evento, datos={}){
 
   }
 
+};
+
+
+// Sesiones de usuarios de prueba. Funciona cuando Firebase está configurado
+// y las reglas de Firestore permiten leer/escribir la colección usuarios_prueba.
+window.guardarUsuarioPruebaFirebase = async function(sesion){
+  if(!db || !sesion?.id) return false;
+  try{
+    await setDoc(doc(db,"usuarios_prueba",sesion.id),{
+      ...sesion,
+      actualizadoISO:new Date().toISOString()
+    },{merge:true});
+    return true;
+  }catch(error){
+    console.log("No se pudo guardar usuario de prueba en Firebase",error);
+    return false;
+  }
+};
+
+window.obtenerUsuariosPruebaFirebase = async function(){
+  if(!db) return [];
+  try{
+    const consulta=query(
+      collection(db,"usuarios_prueba"),
+      orderBy("fechaIngresoISO","desc"),
+      limit(100)
+    );
+    const snap=await getDocs(consulta);
+    return snap.docs.map(d=>({id:d.id,...d.data()}));
+  }catch(error){
+    console.log("No se pudo leer usuarios de prueba desde Firebase",error);
+    return [];
+  }
 };
 
 
@@ -1247,8 +1291,195 @@ window.addEventListener("error",(e)=>{
 </script>
 <!-- FIN FIREBASE -->
 
+
+<style id="professional-user-access-style">
+  body.user-gate-open{overflow:hidden}
+  body.user-gate-open > *:not(#professionalLoginGate):not(script):not(style){
+    user-select:none;
+  }
+  .professional-login-gate{
+    position:fixed;inset:0;z-index:50000;
+    display:flex;align-items:flex-start;justify-content:center;
+    padding:clamp(28px,7vh,78px) 18px 28px;
+    background:
+      radial-gradient(circle at 50% -10%,rgba(213,166,50,.22),transparent 34%),
+      linear-gradient(150deg,rgba(2,20,12,.93),rgba(4,45,27,.91));
+    backdrop-filter:blur(15px);
+    opacity:1;visibility:visible;transition:opacity .22s ease,visibility .22s ease;
+  }
+  .professional-login-gate.closed{opacity:0;visibility:hidden;pointer-events:none}
+  .professional-login-card{
+    width:min(470px,100%);overflow:hidden;
+    border:1px solid rgba(239,212,129,.44);border-radius:25px;
+    background:rgba(255,255,255,.985);
+    box-shadow:0 34px 90px rgba(0,0,0,.42);
+    animation:loginCardIn .32s ease both;
+  }
+  @keyframes loginCardIn{from{opacity:0;transform:translateY(-16px) scale(.985)}to{opacity:1;transform:none}}
+  .professional-login-top{
+    position:relative;padding:25px 27px 23px;overflow:hidden;
+    color:#fff;background:linear-gradient(135deg,#031d12,#073d25 66%,#0d6b41);
+    border-bottom:3px solid var(--gold-500);
+  }
+  .professional-login-top::after{
+    content:"";position:absolute;width:230px;height:230px;right:-116px;top:-125px;
+    border:1px solid rgba(239,212,129,.23);border-radius:50%;
+    box-shadow:0 0 0 37px rgba(239,212,129,.045),0 0 0 74px rgba(239,212,129,.025)
+  }
+  .professional-login-brand{position:relative;z-index:1;display:flex;align-items:center;gap:14px}
+  .professional-login-mark{
+    width:54px;height:54px;display:grid;place-items:center;flex:0 0 auto;
+    border:1px solid rgba(239,212,129,.56);border-radius:16px;
+    color:#ffe9a8;background:rgba(255,255,255,.09);box-shadow:0 12px 28px rgba(0,0,0,.18)
+  }
+  .professional-login-mark svg{width:30px;height:30px}
+  .professional-login-brand b{display:block;font-family:Georgia,"Times New Roman",serif;font-size:21px;line-height:1.08}
+  .professional-login-brand span{display:block;margin-top:6px;color:#cfe1d6;font-size:10px;font-weight:800;letter-spacing:.55px;text-transform:uppercase}
+  .professional-login-body{padding:25px 27px 27px}
+  .professional-login-kicker{display:flex;align-items:center;gap:8px;margin-bottom:8px;color:var(--pnp-700);font-size:9px;font-weight:950;letter-spacing:.95px;text-transform:uppercase}
+  .professional-login-kicker::before{content:"";width:8px;height:8px;border-radius:50%;background:#57d68d;box-shadow:0 0 0 4px rgba(87,214,141,.13)}
+  .professional-login-body h2{margin:0;color:var(--pnp-950);font-size:23px;line-height:1.15;letter-spacing:-.35px}
+  .professional-login-body>p{margin:9px 0 20px;color:#66766d;font-size:11px;line-height:1.55}
+  .professional-username-field{position:relative}
+  .professional-username-field svg{position:absolute;left:13px;top:50%;width:18px;height:18px;color:#718077;transform:translateY(-50%);pointer-events:none}
+  .professional-username-field input{height:49px;padding-left:42px;padding-right:42px;border-radius:13px;font-size:13px;font-weight:800;letter-spacing:.1px}
+  .professional-username-valid{position:absolute;right:13px;top:50%;width:18px;height:18px;display:none;place-items:center;border-radius:50%;color:#fff;background:var(--pnp-500);font-size:11px;font-weight:900;transform:translateY(-50%)}
+  .professional-username-field.valid .professional-username-valid{display:grid}
+  .professional-login-error{min-height:17px;margin:7px 2px 0;color:var(--danger);font-size:9px;font-weight:800}
+  .professional-login-submit{width:100%;min-height:47px;margin-top:7px;border-radius:13px;font-size:11px;letter-spacing:.65px;text-transform:uppercase}
+  .professional-login-submit svg{width:17px;height:17px}
+  .professional-login-foot{display:flex;align-items:center;gap:9px;margin-top:15px;padding:11px 12px;border:1px solid #dce7df;border-radius:12px;color:#68786f;background:#f7faf8;font-size:9px;line-height:1.45}
+  .professional-login-foot svg{width:17px;height:17px;flex:0 0 auto;color:var(--pnp-600)}
+
+  .nav-user-admin{
+    display:none;min-height:39px;padding:0 12px;color:var(--pnp-800)!important;background:#fff!important;
+    border:1px solid var(--border)!important;box-shadow:var(--shadow-xs)!important;font-size:10px!important
+  }
+  .nav-user-admin.show{display:inline-flex}
+  .session-area{position:relative;display:none;flex:0 0 auto}
+  .session-area.show{display:block}
+  .user-session-button{
+    min-height:42px!important;max-width:205px;padding:5px 10px 5px 6px!important;gap:8px!important;
+    color:#183828!important;background:#fff!important;border:1px solid #cfdcd3!important;border-radius:13px!important;
+    box-shadow:0 5px 15px rgba(3,29,18,.07)!important;transform:none!important
+  }
+  .user-session-button:hover{background:#f8fbf9!important;border-color:#aac0b1!important;filter:none!important}
+  .user-avatar{
+    width:30px;height:30px;display:grid;place-items:center;flex:0 0 auto;border-radius:10px;
+    color:#fff;background:linear-gradient(145deg,var(--pnp-500),var(--pnp-900));font-size:11px;font-weight:950
+  }
+  .user-session-copy{min-width:0;text-align:left}
+  .user-session-copy b{display:block;max-width:125px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
+  .user-session-copy span{display:flex;align-items:center;gap:5px;margin-top:2px;color:#728178;font-size:8px;font-weight:800}
+  .user-online-dot{width:6px;height:6px;border-radius:50%;background:#37b66c;box-shadow:0 0 0 3px rgba(55,182,108,.12)}
+  .user-session-chevron{width:13px!important;height:13px!important;color:#68786f}
+  .session-dropdown{
+    position:absolute;right:0;top:calc(100% + 9px);z-index:500;
+    width:285px;display:none;overflow:hidden;border:1px solid #cedbd2;border-radius:16px;
+    background:#fff;box-shadow:0 22px 55px rgba(3,29,18,.19)
+  }
+  .session-dropdown.show{display:block;animation:sessionDrop .18s ease both}
+  @keyframes sessionDrop{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+  .session-dropdown-head{padding:16px;color:#fff;background:linear-gradient(135deg,var(--pnp-900),var(--pnp-700))}
+  .session-dropdown-head b{display:block;font-size:12px}.session-dropdown-head span{display:block;margin-top:4px;color:#cfe1d6;font-size:9px}
+  .session-dropdown-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px}
+  .session-dropdown-kpi{padding:10px;border:1px solid var(--border);border-radius:11px;background:#f9fbfa}
+  .session-dropdown-kpi span{display:block;color:#78867e;font-size:7.5px;font-weight:900;text-transform:uppercase}.session-dropdown-kpi b{display:block;margin-top:4px;color:var(--pnp-900);font-size:10px}
+  .session-dropdown-actions{display:grid;gap:7px;padding:0 12px 12px}
+  .session-dropdown-actions button{width:100%;box-shadow:none}
+
+  .users-modal-overlay{
+    position:fixed;inset:0;z-index:49000;display:none;align-items:center;justify-content:center;padding:18px;
+    background:rgba(2,20,12,.72);backdrop-filter:blur(10px)
+  }
+  .users-modal-overlay.show{display:flex}
+  .users-modal-card{width:min(920px,100%);max-height:min(760px,90vh);display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(239,212,129,.5);border-radius:22px;background:#fff;box-shadow:0 35px 90px rgba(0,0,0,.37)}
+  .users-modal-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 20px;color:#fff;background:linear-gradient(135deg,var(--pnp-950),var(--pnp-700));border-bottom:3px solid var(--gold-500)}
+  .users-modal-title{display:flex;align-items:center;gap:12px}.users-modal-icon{width:40px;height:40px;display:grid;place-items:center;border:1px solid rgba(239,212,129,.34);border-radius:12px;color:#ffe9a8;background:rgba(255,255,255,.08)}.users-modal-icon svg{width:21px;height:21px}
+  .users-modal-title b{display:block;font-size:13px}.users-modal-title span{display:block;margin-top:4px;color:#cfe1d6;font-size:9px}
+  .users-modal-close{width:36px;min-width:36px;height:36px;min-height:36px;padding:0;color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.18);box-shadow:none;font-size:19px}
+  .users-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);background:#f7faf8}
+  .users-summary-card{padding:11px 12px;border:1px solid #dce6df;border-radius:12px;background:#fff}.users-summary-card span{display:block;color:#74827a;font-size:8px;font-weight:900;text-transform:uppercase}.users-summary-card b{display:block;margin-top:4px;color:var(--pnp-900);font-size:18px}
+  .users-modal-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border)}
+  .users-modal-tools span{color:#66766d;font-size:9px;line-height:1.4}.users-modal-tools button{min-height:34px;box-shadow:none}
+  .users-table-wrap{overflow:auto;min-height:180px}
+  .users-table-wrap table{font-size:10px}.users-table-wrap th{top:0}.users-table-wrap td{vertical-align:middle}
+  .user-status-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-size:8px;font-weight:900}.user-status-badge.active{color:#0c6b3b;background:#e7f6ed}.user-status-badge.closed{color:#68786f;background:#edf1ef}.user-status-badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .users-empty{padding:38px 18px;color:#718077;text-align:center;font-size:10px}
+  .users-modal-note{padding:10px 16px;border-top:1px solid var(--border);color:#718077;background:#f7faf8;font-size:8.5px;line-height:1.45}
+
+  @media(max-width:1000px){.nav-inner{row-gap:8px}.session-area{margin-left:auto}.nav-user-admin.show{margin-left:auto}}
+  @media(max-width:760px){
+    .professional-login-gate{padding-top:22px}.professional-login-top,.professional-login-body{padding-left:20px;padding-right:20px}
+    .session-area{order:3;margin-left:0}.user-session-button{max-width:190px}.nav-user-admin.show{order:3;margin-left:auto}
+    .users-summary{grid-template-columns:1fr}.users-modal-tools{align-items:flex-start;flex-direction:column}
+  }
+  @media(max-width:520px){
+    .professional-login-card{border-radius:20px}.professional-login-brand b{font-size:18px}.professional-login-body h2{font-size:20px}
+    .session-area{width:100%;order:4}.user-session-button{width:100%;max-width:none}.session-dropdown{left:0;right:auto;width:min(100%,310px)}
+    .nav-user-admin.show{order:3;margin-left:0}.users-modal-overlay{padding:8px}.users-modal-card{max-height:94vh;border-radius:17px}
+  }
+</style>
+
 </head>
-<body>
+<body class="user-gate-open">
+
+  <div class="professional-login-gate" id="professionalLoginGate" role="dialog" aria-modal="true" aria-labelledby="professionalLoginTitle">
+    <div class="professional-login-card">
+      <div class="professional-login-top">
+        <div class="professional-login-brand">
+          <div class="professional-login-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2.8 19 6v5.1c0 4.6-2.8 8.4-7 10.1-4.2-1.7-7-5.5-7-10.1V6z"/><path d="M9.2 12.1 11 14l4.2-4.5"/></svg>
+          </div>
+          <div><b>Área de Análisis de Inteligencia</b><span>DIVINCRI La Libertad · Acceso de prueba</span></div>
+        </div>
+      </div>
+      <form class="professional-login-body" id="professionalLoginForm" autocomplete="off" novalidate>
+        <div class="professional-login-kicker">Identificación de usuario</div>
+        <h2 id="professionalLoginTitle">Bienvenido al sistema</h2>
+        <p>Ingresa un nombre de usuario para identificar tu sesión. Durante esta fase no se requiere contraseña.</p>
+        <label for="professionalUsername">Username / alias</label>
+        <div class="professional-username-field" id="professionalUsernameField">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c.7-4.2 3-6.3 7-6.3s6.3 2.1 7 6.3"/></svg>
+          <input id="professionalUsername" name="username" maxlength="24" placeholder="Ejemplo: Carlos_Analista" aria-describedby="professionalLoginError" autofocus>
+          <span class="professional-username-valid" aria-hidden="true">✓</span>
+        </div>
+        <div class="professional-login-error" id="professionalLoginError" aria-live="polite"></div>
+        <button class="professional-login-submit" type="submit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 5l7 7-7 7M21 12H8"/><path d="M11 5H4v14h7"/></svg>
+          Ingresar al sistema
+        </button>
+        <div class="professional-login-foot">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3 4.5 6.4v5.5c0 4.1 2.8 7.7 7.5 9.1 4.7-1.4 7.5-5 7.5-9.1V6.4z"/><path d="M9 12h6M12 9v6"/></svg>
+          <span>El ingreso registra username, fecha, hora, navegador y resolución. Es un acceso temporal para pruebas.</span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="users-modal-overlay" id="usersModalOverlay" aria-hidden="true">
+    <section class="users-modal-card" role="dialog" aria-modal="true" aria-labelledby="usersModalTitle">
+      <header class="users-modal-head">
+        <div class="users-modal-title">
+          <div class="users-modal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c.5-4 2.3-6 5.5-6s5 2 5.5 6M16 7.5a2.6 2.6 0 0 1 0 5.1M16.5 14c2.5.3 3.8 2 4 5"/></svg></div>
+          <div><b id="usersModalTitle">Registro de usuarios de prueba</b><span>Sesiones identificadas dentro del sistema</span></div>
+        </div>
+        <button class="users-modal-close" id="usersModalClose" type="button" aria-label="Cerrar">×</button>
+      </header>
+      <div class="users-summary">
+        <div class="users-summary-card"><span>Sesiones registradas</span><b id="usersTotalCount">0</b></div>
+        <div class="users-summary-card"><span>Activos recientemente</span><b id="usersActiveCount">0</b></div>
+        <div class="users-summary-card"><span>Usuarios distintos</span><b id="usersUniqueCount">0</b></div>
+      </div>
+      <div class="users-modal-tools">
+        <span id="usersDataOrigin">Mostrando el registro disponible en este navegador.</span>
+        <button class="light" id="refreshUsersButton" type="button">↻ Actualizar</button>
+      </div>
+      <div class="users-table-wrap" id="usersTableWrap"></div>
+      <div class="users-modal-note">Modo de prueba: el panel aparece al ingresar como <b>ADMINISTRADOR</b>. Con Firebase configurado, intenta consolidar las sesiones de distintos dispositivos; sin Firebase, muestra el historial guardado en este navegador.</div>
+    </section>
+  </div>
+
 
   <header class="hero" id="inicio">
     <div class="hero-tech" aria-hidden="true"></div>
@@ -1293,6 +1524,29 @@ window.addEventListener("error",(e)=>{
       <a href="#consulta">Consulta</a>
       <a href="#grafo">Grafo</a>
       <a href="#informe">Informe</a>
+
+      <button class="nav-user-admin" id="navUserAdmin" type="button" title="Ver usuarios registrados">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c.5-4 2.3-6 5.5-6s5 2 5.5 6M16 7.5a2.6 2.6 0 0 1 0 5.1M16.5 14c2.5.3 3.8 2 4 5"/></svg>
+        Usuarios
+      </button>
+      <div class="session-area" id="sessionArea">
+        <button class="user-session-button" id="userSessionButton" type="button" aria-expanded="false">
+          <span class="user-avatar" id="userAvatar">U</span>
+          <span class="user-session-copy"><b id="activeUsername">Usuario</b><span><i class="user-online-dot"></i> Sesión activa</span></span>
+          <svg class="user-session-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 10 5 5 5-5"/></svg>
+        </button>
+        <div class="session-dropdown" id="sessionDropdown">
+          <div class="session-dropdown-head"><b id="dropdownUsername">Usuario</b><span id="dropdownStarted">Sesión iniciada</span></div>
+          <div class="session-dropdown-grid">
+            <div class="session-dropdown-kpi"><span>Tiempo conectado</span><b id="sessionElapsed">0 min</b></div>
+            <div class="session-dropdown-kpi"><span>Estado</span><b>En línea</b></div>
+          </div>
+          <div class="session-dropdown-actions">
+            <button class="light" id="dropdownUsersButton" type="button" style="display:none">Ver usuarios de prueba</button>
+            <button class="red" id="logoutUserButton" type="button">Cerrar sesión</button>
+          </div>
+        </div>
+      </div>
     </div>
   </nav>
 
@@ -2576,6 +2830,7 @@ let graphState={
     showLabels:false,
     types:new Set(GRAPH_TYPES),
     selectedId:null,
+    selectedIds:new Set(),
     focusId:null
   }
 };
@@ -2895,7 +3150,7 @@ function graphUpdateGeometry(){
 }
 function graphShowTooltip(evt,node){
   const tooltip=document.getElementById("graphTooltip"),wrap=graphState.wrap;if(!tooltip||!wrap)return;
-  tooltip.innerHTML=`<span class="tt-type">${esc(graphTypeLabel(node.type))}</span><b>${esc(node.label)}</b><span>${node.fullDegree} vínculo(s) en la red · ${node.count} aparición(es). Clic para seleccionar; doble clic para ver únicamente sus relaciones.</span>`;
+  tooltip.innerHTML=`<span class="tt-type">${esc(graphTypeLabel(node.type))}</span><b>${esc(node.label)}</b><span>${node.fullDegree} vínculo(s) en la red · ${node.count} aparición(es). Clic para seleccionar; Ctrl/Shift + clic para seleccionar varios; doble clic para ver únicamente sus relaciones.</span>`;
   const rect=wrap.getBoundingClientRect(),x=Math.min(rect.width-285,Math.max(12,evt.clientX-rect.left+14)),y=Math.min(rect.height-126,Math.max(12,evt.clientY-rect.top+14));
   tooltip.style.left=x+"px";tooltip.style.top=y+"px";tooltip.classList.add("show");
 }
@@ -2956,7 +3211,7 @@ function graphRenderNode(node,parent){
   g.addEventListener("pointerup",e=>{
     if(graphState.dragNode!==node)return;graphState.dragNode=null;
     if(!graphState.dragMoved){
-      const now=Date.now();graphSelectNode(node.id,true);
+      const now=Date.now();graphSelectNode(node.id,true,e.ctrlKey||e.metaKey||e.shiftKey);
       if(now-lastClick<360){graphState.options.focusId=node.id;graphState.options.mode="direct";renderGraph(graphState.records,graphState.query)}
       lastClick=now;
     }
@@ -2986,17 +3241,57 @@ function graphUpdateControls(){
   const layout=document.getElementById("graphLayoutToggle");if(layout){layout.classList.toggle("active",graphState.options.layout==="columns");layout.querySelector("span").textContent=graphState.options.layout==="columns"?"Orden por tipo":"Diseño central"}
   const labels=document.getElementById("graphLabelsToggle");if(labels)labels.classList.toggle("active",graphState.options.showLabels);
 }
+function graphSelectedIds(){
+  if(!(graphState.options.selectedIds instanceof Set))graphState.options.selectedIds=new Set();
+  if(!graphState.options.selectedIds.size&&graphState.options.selectedId)graphState.options.selectedIds.add(graphState.options.selectedId);
+  return graphState.options.selectedIds;
+}
 function graphUpdateSelectionUI(){
   const bar=document.getElementById("graphSelectionBar"),copy=document.getElementById("graphSelectionCopy");if(!bar||!copy)return;
-  const node=graphState.fullNet?.nodes.find(n=>n.id===graphState.options.selectedId);
-  if(!node){bar.classList.remove("show");copy.innerHTML="";return}
-  bar.classList.add("show");copy.innerHTML=`Seleccionado: <b>${esc(node.label)}</b> · ${esc(graphTypeLabel(node.type))} · ${node.fullDegree||node.degree} vínculos en la red.`;
+  const ids=graphSelectedIds();
+  const all=graphState.fullNet?.nodes||[];
+  const nodes=[...ids].map(id=>all.find(n=>n.id===id)).filter(Boolean);
+  if(!nodes.length){
+    ids.clear();graphState.options.selectedId=null;
+    bar.classList.remove("show");copy.innerHTML="";return;
+  }
+  if(!nodes.some(n=>n.id===graphState.options.selectedId))graphState.options.selectedId=nodes[nodes.length-1].id;
+  const primary=nodes.find(n=>n.id===graphState.options.selectedId)||nodes[nodes.length-1];
+  bar.classList.add("show");
+  if(nodes.length===1){
+    copy.innerHTML=`Seleccionado: <b>${esc(primary.label)}</b> · ${esc(graphTypeLabel(primary.type))} · ${primary.fullDegree||primary.degree} vínculos. Pulsa <b>Supr</b> para eliminar.`;
+  }else{
+    copy.innerHTML=`<b>${nodes.length} elementos seleccionados</b> · Principal: ${esc(primary.label)}. Pulsa <b>Supr</b> para eliminarlos todos.`;
+  }
+  const multi=nodes.length>1;
+  ["graphRenameSelected"].forEach(id=>{const el=document.getElementById(id);if(el){el.disabled=multi;el.title=multi?"Disponible al seleccionar un solo nodo":"Renombrar nodo"}});
 }
-function graphSelectNode(id,showDetail=true){
-  graphState.options.selectedId=id;
-  graphState.nodeEls.forEach((el,nodeId)=>el.classList.toggle("selected",nodeId===id));
-  graphUpdateSelectionUI();graphHighlight(id,false);
-  const node=graphState.fullNet?.nodes.find(n=>n.id===id);if(showDetail&&node)showNodeDetail(node,graphState.records);
+function graphSelectNode(id,showDetail=true,additive=false){
+  const ids=graphSelectedIds();
+  if(additive){
+    if(ids.has(id)){
+      ids.delete(id);
+      if(graphState.options.selectedId===id)graphState.options.selectedId=[...ids].at(-1)||null;
+    }else{
+      ids.add(id);graphState.options.selectedId=id;
+    }
+  }else{
+    ids.clear();ids.add(id);graphState.options.selectedId=id;
+  }
+  graphState.nodeEls.forEach((el,nodeId)=>el.classList.toggle("selected",ids.has(nodeId)));
+  graphUpdateSelectionUI();
+  const primary=graphState.options.selectedId;
+  graphHighlight(primary,false);
+  const node=graphState.fullNet?.nodes.find(n=>n.id===id);if(showDetail&&node&&ids.has(id))showNodeDetail(node,graphState.records);
+}
+function graphRestoreSelectionVisuals(){
+  const ids=graphSelectedIds();
+  const valid=new Set((graphState.fullNet?.nodes||[]).map(n=>n.id));
+  [...ids].forEach(id=>{if(!valid.has(id))ids.delete(id)});
+  if(graphState.options.selectedId&&!valid.has(graphState.options.selectedId))graphState.options.selectedId=[...ids].at(-1)||null;
+  graphState.nodeEls.forEach((el,nodeId)=>el.classList.toggle("selected",ids.has(nodeId)));
+  graphUpdateSelectionUI();
+  graphHighlight(graphState.options.selectedId,false);
 }
 function graphRenderGuides(layout,parent){
   if(layout.layoutMode!=="columns"||!layout.lanes?.length)return;
@@ -3020,6 +3315,7 @@ function renderGraph(records,query){
   if(!baseCenter)return;
   if(graphState.options.focusId&&!fullNet.nodes.some(n=>n.id===graphState.options.focusId))graphState.options.focusId=null;
   if(graphState.options.selectedId&&!fullNet.nodes.some(n=>n.id===graphState.options.selectedId))graphState.options.selectedId=null;
+  if(graphState.options.selectedIds instanceof Set){const validIds=new Set(fullNet.nodes.map(n=>n.id));[...graphState.options.selectedIds].forEach(id=>{if(!validIds.has(id))graphState.options.selectedIds.delete(id)})}
   const visible=graphVisibleNetwork(fullNet,baseCenter),center=visible.root;
   if(!center)return;
   visible.nodes.forEach(n=>{n.isCenter=n.id===center.id;n.isObjective=!!query&&n.id===baseCenter.id});
@@ -3036,13 +3332,12 @@ function renderGraph(records,query){
   const guideLayer=svgNode("g",{class:"graph-guides"}),edgeLayer=svgNode("g",{class:"links"}),labelLayer=svgNode("g",{class:"link-labels"}),nodeLayer=svgNode("g",{class:"nodes"});root.append(guideLayer,edgeLayer,labelLayer,nodeLayer);graphRenderGuides(layout,guideLayer);
   visible.edges.forEach(edge=>{
     const st=graphRelationStyle(edge.relation),path=svgNode("path",{d:graphCurvePath(edge),fill:"none",stroke:st.color,"stroke-width":Math.min(4,1.4+Math.log2(edge.count+1)*.68),"stroke-dasharray":st.dash,"stroke-linecap":"round",opacity:".52"});
-    // FIX: guardar TODAS las fechas del vínculo en el elemento SVG
-    // antes solo se mostraba la primera fecha porque el path no tenía historial asociado.
-    if(edge.fechas && edge.fechas.length){
-      path.dataset.fechas = JSON.stringify(edge.fechas);
-      path.dataset.tipo = edge.relation || "";
-      path.style.pointerEvents="stroke";
-    }
+    // Identificador estable y fechas reales del vínculo para interacción segura.
+    path.dataset.edgeId=edge.id;
+    path.dataset.id=edge.id;
+    path.dataset.fechas=JSON.stringify((edge.events||[]).map(ev=>ev?.date||ev?.fecha||ev?.fecha_hora||"").filter(Boolean));
+    path.dataset.tipo=edge.relation||"";
+    path.style.pointerEvents="stroke";
     edgeLayer.appendChild(path);graphState.edgeEls.set(edge.id,path);
   });
   const showLabels=graphState.options.showLabels||visible.nodes.length<=8;
@@ -3053,8 +3348,8 @@ function renderGraph(records,query){
     });
   }
   visible.nodes.forEach(n=>graphRenderNode(n,nodeLayer));graphBindCanvasInteractions();graphApplyTransform();
-  if(graphState.options.selectedId&&graphState.nodeEls.has(graphState.options.selectedId))graphSelectNode(graphState.options.selectedId,false);
-  const help=document.createElement("div");help.className="graph-help";help.innerHTML=`<span><b>${graphModeName(graphState.options.mode)}:</b> ${visible.nodes.length} nodos visibles. Usa los filtros para ocultar tipos; selecciona un nodo y pulsa “Ver solo sus vínculos” para aislarlo.</span>`;wrap.appendChild(help);
+  graphRestoreSelectionVisuals();
+  const help=document.createElement("div");help.className="graph-help";help.innerHTML=`<span><b>${graphModeName(graphState.options.mode)}:</b> ${visible.nodes.length} nodos visibles. Usa los filtros para ocultar tipos; selecciona un nodo; usa Ctrl/Shift + clic para elegir varios y pulsa Supr para eliminarlos.</span>`;wrap.appendChild(help);
 }
 function setGraphViewMode(mode){graphState.options.mode=mode;renderGraph(graphState.records.length?graphState.records:CURRENT,graphState.query||CURRENT_QUERY)}
 function toggleGraphLayout(){graphState.options.layout=graphState.options.layout==="radial"?"columns":"radial";renderGraph(graphState.records.length?graphState.records:CURRENT,graphState.query||CURRENT_QUERY)}
@@ -3069,7 +3364,7 @@ function findGraphNode(){
   const qd=onlyDigits(value),qn=norm(value),nodes=graphState.fullNet?.nodes||[];
   const matches=nodes.filter(n=>(qd&&onlyDigits(n.raw)===qd)||norm(n.label)===qn||(qd&&onlyDigits(n.raw).includes(qd))||norm(n.label).includes(qn)).sort((a,b)=>b.fullDegree-a.fullDegree||b.count-a.count);
   if(!matches.length){toast("No se encontró esa entidad en la red visible.");return}
-  const node=matches[0];graphState.options.selectedId=node.id;graphState.options.focusId=node.id;graphState.options.mode="principal";
+  const node=matches[0];graphState.options.selectedId=node.id;graphSelectedIds().clear();graphSelectedIds().add(node.id);graphState.options.focusId=node.id;graphState.options.mode="principal";
   if(!graphState.options.types.has(node.type))graphState.options.types.add(node.type);
   renderGraph(graphState.records,graphState.query);showNodeDetail(node,graphState.records);toast(`Entidad enfocada: ${node.label}`);
 }
@@ -3077,7 +3372,7 @@ function focusSelectedGraphNode(){
   if(!graphState.options.selectedId){toast("Selecciona primero un nodo del gráfico.");return}
   graphState.options.focusId=graphState.options.selectedId;graphState.options.mode="direct";renderGraph(graphState.records,graphState.query);
 }
-function clearGraphSelection(){graphState.options.selectedId=null;graphUpdateSelectionUI();graphHighlight(null,false);graphState.nodeEls.forEach(el=>el.classList.remove("selected"))}
+function clearGraphSelection(){graphState.options.selectedId=null;graphSelectedIds().clear();graphUpdateSelectionUI();graphHighlight(null,false);graphState.nodeEls.forEach(el=>el.classList.remove("selected"))}
 function clearGraphFocus(){graphState.options.focusId=null;graphState.options.mode="principal";renderGraph(graphState.records.length?graphState.records:CURRENT,graphState.query||CURRENT_QUERY)}
 function showNodeDetail(n,records){
   const rel=records.filter(r=>(n.type==="numero"&&r.numero===n.raw)||(n.type==="imei"&&r.imei===n.raw)||(n.type==="dni"&&r.dni===n.raw)||(n.type==="persona"&&norm(r.nombre)===norm(n.raw))||(n.type==="operadora"&&norm(r.operadora)===norm(n.raw)));
@@ -3504,7 +3799,9 @@ function graphEnhanceRenderedEdges(){
     g.append(rect,txt);
     g.addEventListener("click",e=>{e.stopPropagation();openGraphRelationDetails(edge.id)});
     g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openGraphRelationDetails(edge.id)}});
-    g.setAttribute("title",summary.total>1?`${summary.total} eventos. Haz clic para verlos agrupados por fecha.`:"Haz clic para ver el evento.");
+    g.dataset.edgeId=edge.id;
+    g.dataset.id=edge.id;
+    g.removeAttribute("title");
     layer.appendChild(g);
     graphDateLabelEls.set(edge.id,g);
   });
@@ -3801,6 +4098,7 @@ function addGraphNodeFromEditor(){
   if(!exists)GRAPH_CUSTOM.nodes.push({id,type,raw,label:alias||graphNodeLabel(type,raw,raw),createdAt:new Date().toISOString()});
   if(alias)GRAPH_CUSTOM.aliases[id]=alias;
   graphState.options.selectedId=id;
+  graphSelectedIds().clear();graphSelectedIds().add(id);
 
   if(input)input.value="";
   if(aliasInput)aliasInput.value="";
@@ -3831,29 +4129,37 @@ function connectFromSelectedGraphNode(){
   suggestGraphRelation();
 }
 function deleteSelectedGraphNode(){
-  const id=graphState.options.selectedId;
-  if(!id){toast("Selecciona primero un nodo del grafo.");return}
-  const node=graphAllEditorNodes().find(n=>n.id===id);
-  if(!node)return;
-  if(!confirm(`¿Quitar "${node.label}" del grafo? Se retirará este dato de los registros relacionados y también sus conexiones manuales.`))return;
+  const ids=graphSelectedIds();
+  const requested=[...ids];
+  if(!requested.length&&graphState.options.selectedId)requested.push(graphState.options.selectedId);
+  if(!requested.length){toast("Selecciona primero uno o varios elementos del grafo.");return}
 
-  const field=graphFieldForType(node.type);
-  if(field){
-    DB=DB.map(r=>{
-      const copy={...r};
-      if(graphNodeMatchesRecord(node,copy))copy[field]="";
-      return cleanRecord(copy);
-    }).filter(r=>r.numero||r.imei||r.dni||r.nombre||r.operadora);
-    DB=dedupe(DB);
-  }
+  const nodes=graphAllEditorNodes().filter(n=>requested.includes(n.id));
+  if(!nodes.length){toast("No se encontraron los elementos seleccionados.");return}
+  const message=nodes.length===1
+    ? `¿Quitar "${nodes[0].label}" del grafo? Se retirará este dato de los registros relacionados y también sus conexiones manuales.`
+    : `¿Quitar los ${nodes.length} elementos seleccionados? Se retirarán sus datos y conexiones relacionadas.`;
+  if(!confirm(message))return;
 
-  GRAPH_CUSTOM.nodes=GRAPH_CUSTOM.nodes.filter(n=>n.id!==id);
-  GRAPH_CUSTOM.edges=GRAPH_CUSTOM.edges.filter(e=>e.source!==id&&e.target!==id);
-  delete GRAPH_CUSTOM.aliases[id];
+  DB=DB.map(record=>{
+    const copy={...record};
+    nodes.forEach(node=>{
+      const field=graphFieldForType(node.type);
+      if(field&&graphNodeMatchesRecord(node,copy))copy[field]="";
+    });
+    return cleanRecord(copy);
+  }).filter(r=>r.numero||r.imei||r.dni||r.nombre||r.operadora);
+  DB=dedupe(DB);
+
+  const removeIds=new Set(nodes.map(n=>n.id));
+  GRAPH_CUSTOM.nodes=GRAPH_CUSTOM.nodes.filter(n=>!removeIds.has(n.id));
+  GRAPH_CUSTOM.edges=GRAPH_CUSTOM.edges.filter(e=>!removeIds.has(e.source)&&!removeIds.has(e.target));
+  nodes.forEach(n=>delete GRAPH_CUSTOM.aliases[n.id]);
+  ids.clear();
   graphState.options.selectedId=null;
-  if(graphState.options.focusId===id)graphState.options.focusId=null;
+  if(removeIds.has(graphState.options.focusId))graphState.options.focusId=null;
   closeGraphModal("graphEditorModal");
-  refreshAfterGraphEdit("Nodo y conexiones retirados.");
+  refreshAfterGraphEdit(nodes.length===1?"Elemento y conexiones eliminados.":`${nodes.length} elementos y sus conexiones fueron eliminados.`);
 }
 function suggestGraphRelation(){
   const sourceId=document.getElementById("graphConnectionSource")?.value;
@@ -4436,380 +4742,607 @@ document.addEventListener("mouseover",function(e){
 <!-- ================= FIN CORRECCION V4 ================= -->
 
 
-<!-- ================= V5 HISTORIAL FECHAS + DELETE TECLADO ================= -->
-<style>
-.link-history-box{
- position:fixed;
- z-index:999999;
- display:none;
- width:280px;
- background:#fff;
- border:1px solid #dbe5de;
- border-radius:16px;
- padding:14px;
- box-shadow:0 20px 50px rgba(0,0,0,.25);
- font-size:11px;
-}
-.link-history-box h4{
- margin:0 0 10px;
- color:#073d25;
-}
-.link-history-item{
- padding:7px;
- border-bottom:1px solid #edf2ee;
- color:#526359;
-}
-.link-history-item:last-child{border:0}
-.delete-alert{
- position:fixed;
- z-index:999999;
- left:50%;
- top:50%;
- transform:translate(-50%,-50%);
- background:white;
- padding:22px;
- border-radius:18px;
- border:1px solid #ddd;
- box-shadow:0 30px 70px rgba(0,0,0,.3);
- display:none;
- text-align:center;
-}
+
+
+
+<!-- ================= SOLUCIÓN DEFINITIVA V7: TODAS LAS FECHAS ================= -->
+<style id="graph-date-definitive-styles">
+  .edge-date-labels .edge-date-pill{cursor:pointer;outline:none}
+  .edge-date-labels .edge-date-pill:focus rect:not(.edge-date-hit){stroke-width:2.2!important;filter:drop-shadow(0 2px 5px rgba(3,29,18,.22))}
+  .edge-date-hit{fill:transparent;stroke:transparent;pointer-events:all}
+  .graph-edge-clickable{cursor:pointer}
+
+  #graphDatePopover{
+    position:fixed;
+    z-index:30000;
+    display:none;
+    width:min(380px,calc(100vw - 24px));
+    max-height:min(460px,calc(100vh - 24px));
+    overflow:hidden;
+    border:1px solid #c8d8ce;
+    border-radius:16px;
+    background:#fff;
+    color:#1f3328;
+    box-shadow:0 24px 65px rgba(3,29,18,.28);
+    font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif;
+    transform:translateY(4px);
+    opacity:0;
+    transition:opacity .12s ease,transform .12s ease;
+    pointer-events:none;
+  }
+  #graphDatePopover.show{display:block;opacity:1;transform:translateY(0)}
+  #graphDatePopover.pinned{pointer-events:auto}
+  .graph-date-pop-head{
+    position:sticky;top:0;z-index:2;
+    display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+    padding:13px 14px 11px;
+    border-bottom:1px solid #dce6df;
+    background:linear-gradient(180deg,#ffffff,#f4f8f5);
+  }
+  .graph-date-pop-head b{display:block;color:#073d25;font-size:12px;line-height:1.25}
+  .graph-date-pop-head span{display:block;margin-top:4px;color:#63736a;font-size:9px;line-height:1.4}
+  .graph-date-pop-close{
+    min-width:30px;width:30px;height:30px;min-height:30px;padding:0;
+    color:#405248;background:#fff;border:1px solid #d3dfd7;border-radius:9px;
+    box-shadow:none;font-size:18px;line-height:1
+  }
+  .graph-date-pop-list{max-height:340px;overflow:auto;padding:9px}
+  .graph-date-pop-item{
+    display:grid;grid-template-columns:23px minmax(0,1fr);gap:9px;align-items:start;
+    padding:9px 10px;margin-bottom:7px;
+    border:1px solid #e0e8e3;border-radius:11px;background:#fbfdfc
+  }
+  .graph-date-pop-item:last-child{margin-bottom:0}
+  .graph-date-pop-index{
+    width:23px;height:23px;display:grid;place-items:center;
+    border-radius:50%;color:#fff;background:#0d6b41;
+    font-size:8px;font-weight:900
+  }
+  .graph-date-pop-item b{display:block;color:#173c29;font-size:10px}
+  .graph-date-pop-item span{display:block;margin-top:3px;color:#65756c;font-size:8.5px;line-height:1.4}
+  .graph-date-pop-empty{padding:17px;color:#6d7c73;text-align:center;font-size:10px}
+  .graph-date-pop-foot{
+    padding:9px 13px;border-top:1px solid #e0e8e3;background:#f7faf8;
+    color:#68786f;font-size:8.5px;line-height:1.4
+  }
+  @media(max-width:520px){
+    #graphDatePopover{width:calc(100vw - 18px);max-height:72vh}
+    .graph-date-pop-list{max-height:50vh}
+  }
 </style>
 
-<div id="linkHistoryBox" class="link-history-box"></div>
+<div id="graphDatePopover" aria-live="polite" aria-hidden="true"></div>
 
-<div id="deleteAlert" class="delete-alert">
-<h3>🗑 Eliminar elemento</h3>
-<p id="deleteText">¿Eliminar seleccionado?</p>
-<button onclick="confirmDeleteNode()">Eliminar</button>
-<button onclick="cancelDeleteNode()" class="light">Cancelar</button>
-</div>
-
-<script>
-
-let selectedDeleteNode=null;
-
-
-/* ================= HISTORIAL DE VINCULO ================= */
-
-function mostrarHistorialVinculo(event, link){
-
- let fechas=[];
-
- try{
-
- fechas =
- link.fechas ||
- link.historial ||
- link.dates ||
- [];
-
- }catch(e){}
-
-
- if(typeof fechas === "string"){
-   try{
-     fechas = JSON.parse(fechas);
-   }catch(e){
-     fechas = [fechas];
-   }
- }
-
- if(!Array.isArray(fechas)){
-
-   fechas=[
-    link.fecha ||
-    link.fecha_hora ||
-    link.date ||
-    "Sin fecha"
-   ];
-
- }
-
-
- let box=document.getElementById("linkHistoryBox");
-
- box.innerHTML=
- "<h4>📅 HISTORIAL DEL VÍNCULO</h4>"+
- fechas.map((f,i)=>
- `<div class="link-history-item">
- 📌 ${f}
- </div>`).join("");
-
- box.style.display="block";
- box.style.left=(event.clientX+15)+"px";
- box.style.top=(event.clientY+15)+"px";
-
-}
-
-
-document.addEventListener("mousemove",function(e){
-
- let target=e.target;
-
- if(target.dataset && target.dataset.fechas){
-
-   mostrarHistorialVinculo(e,target.dataset);
-
- }else{
-
-   let box=document.getElementById("linkHistoryBox");
-
-   if(box) box.style.display="none";
-
- }
-
-});
-
-
-/* ================= DELETE TECLADO ================= */
-
-document.addEventListener("keydown",function(e){
-
- if(e.key==="Delete" || e.key==="Backspace"){
-
-   let activo=document.activeElement;
-
-   if(
-    activo &&
-    (
-     activo.tagName==="INPUT" ||
-     activo.tagName==="TEXTAREA" ||
-     activo.tagName==="SELECT"
-    )
-   ){
-    return;
-   }
-
-
-   if(window.intelNodeActual){
-
-    selectedDeleteNode=window.intelNodeActual;
-
-    document.getElementById("deleteText").innerHTML=
-    "¿Eliminar <b>"+
-    (
-    selectedDeleteNode.dataset.valor ||
-    selectedDeleteNode.dataset.id ||
-    "elemento"
-    )+
-    "</b>?";
-
-    document.getElementById("deleteAlert").style.display="block";
-
-   }
-
- }
-
-});
-
-
-window.confirmDeleteNode=function(){
-
- if(selectedDeleteNode){
-
-   let id=
-   selectedDeleteNode.dataset.id ||
-   selectedDeleteNode.getAttribute("data-id");
-
-
-   localStorage.setItem(
-    "deleted_"+id,
-    "true"
-   );
-
-
-   selectedDeleteNode.remove();
-
-
-   toast("Elemento eliminado");
-
- }
-
- document.getElementById("deleteAlert").style.display="none";
-
-};
-
-
-window.cancelDeleteNode=function(){
-
- document.getElementById("deleteAlert").style.display="none";
-
-};
-
-
-</script>
-
-<!-- ================= FIN V5 ================= -->
-
-
-<!-- ================= FIX DEFINITIVO FECHAS + DELETE GRAFO V6 ================= -->
-<style>
-#linkHistoryBox{
- max-height:360px;
- overflow:auto;
-}
-</style>
-<script>
+<script id="graph-date-definitive-script">
 (function(){
+  let popPinned=false;
+  let lastEdgeId="";
 
-// Obtiene todas las fechas posibles de cualquier estructura del grafo
-function fechasReales(edge){
- let arr=[];
+  function findGraphEdge(edgeId){
+    if(!edgeId||typeof graphState==="undefined")return null;
+    return graphState.visibleNet?.edges?.find(e=>e.id===edgeId)
+      || graphState.fullNet?.edges?.find(e=>e.id===edgeId)
+      || null;
+  }
 
- if(!edge) return arr;
+  function edgeEvents(edge){
+    if(!edge)return [];
+    let list=Array.isArray(edge.events)?edge.events.slice():[];
 
- const fuentes=[
-   edge.events,
-   edge.fechas,
-   edge.historial,
-   edge.dates
- ];
+    if(!list.length){
+      const fallbacks=[edge.fechas,edge.historial,edge.dates];
+      fallbacks.forEach(source=>{
+        if(Array.isArray(source)){
+          source.forEach((value,index)=>{
+            if(value&&typeof value==="object"){
+              list.push({
+                id:"fallback_object_"+index,
+                date:value.date||value.fecha||value.fecha_hora||value.timestamp||"",
+                kind:value.kind||value.tipo||graphRelationText(edge.relation),
+                note:value.note||value.operadora||""
+              });
+            }else if(value){
+              list.push({id:"fallback_"+index,date:String(value),kind:graphRelationText(edge.relation),note:""});
+            }
+          });
+        }else if(source){
+          list.push({id:"fallback_single_"+list.length,date:String(source),kind:graphRelationText(edge.relation),note:""});
+        }
+      });
+      [edge.fecha,edge.fecha_hora,edge.fechaHora,edge.date,edge.timestamp].forEach((value,index)=>{
+        if(value)list.push({id:"fallback_field_"+index,date:String(value),kind:graphRelationText(edge.relation),note:""});
+      });
+    }
 
- fuentes.forEach(x=>{
-   if(Array.isArray(x)){
-     x.forEach(v=>{
-       if(typeof v==="object"){
-         arr.push(v.date||v.fecha||v.fecha_hora||v.timestamp||JSON.stringify(v));
-       }else arr.push(v);
-     });
-   }
- });
+    const seen=new Set();
+    return list.filter(event=>{
+      const key=[event?.date||event?.fecha||event?.fecha_hora||"",event?.kind||event?.tipo||"",event?.note||event?.operadora||""].join("|");
+      if(seen.has(key))return false;
+      seen.add(key);
+      return true;
+    }).sort((a,b)=>parseDatePE(b?.date||b?.fecha||b?.fecha_hora||"")-parseDatePE(a?.date||a?.fecha||a?.fecha_hora||""));
+  }
 
- [
-  edge.fecha,
-  edge.fecha_hora,
-  edge.fechaHora,
-  edge.date,
-  edge.timestamp
- ].forEach(v=>{
-   if(v) arr.push(v);
- });
+  function assignEdgeIds(){
+    if(typeof graphState==="undefined")return;
+    graphState.edgeEls?.forEach((path,edgeId)=>{
+      path.dataset.edgeId=edgeId;
+      path.dataset.id=edgeId;
+      path.classList.add("graph-edge-clickable");
+      path.removeAttribute("title");
+      path.setAttribute("pointer-events","stroke");
+    });
+    if(typeof graphDateLabelEls!=="undefined"){
+      graphDateLabelEls.forEach((pill,edgeId)=>{
+        pill.dataset.edgeId=edgeId;
+        pill.dataset.id=edgeId;
+        pill.removeAttribute("title");
+        if(!pill.querySelector(".edge-date-hit")){
+          const width=Number(pill.dataset.pillWidth||70);
+          const hit=svgNode("rect",{
+            class:"edge-date-hit",
+            x:-width/2-7,
+            y:-14,
+            width:width+14,
+            height:28,
+            rx:12,
+            "pointer-events":"all"
+          });
+          pill.insertBefore(hit,pill.firstChild);
+        }
+      });
+    }
+  }
 
- return [...new Set(arr.filter(Boolean))];
-}
+  function edgeIdFromTarget(target){
+    const el=target?.closest?.(".edge-date-pill,.graph-edge-clickable,.links path");
+    if(!el)return "";
+    if(el.dataset?.edgeId)return el.dataset.edgeId;
+    if(typeof graphDateLabelEls!=="undefined"){
+      for(const [id,node] of graphDateLabelEls.entries())if(node===el)return id;
+    }
+    if(typeof graphState!=="undefined"){
+      for(const [id,node] of graphState.edgeEls?.entries?.()||[])if(node===el)return id;
+    }
+    return "";
+  }
 
+  function positionPopover(evt){
+    const pop=document.getElementById("graphDatePopover");
+    if(!pop)return;
+    const margin=12;
+    const desiredX=(evt?.clientX||window.innerWidth/2)+16;
+    const desiredY=(evt?.clientY||window.innerHeight/2)+16;
+    requestAnimationFrame(()=>{
+      const rect=pop.getBoundingClientRect();
+      const left=Math.max(margin,Math.min(desiredX,window.innerWidth-rect.width-margin));
+      const top=Math.max(margin,Math.min(desiredY,window.innerHeight-rect.height-margin));
+      pop.style.left=left+"px";
+      pop.style.top=top+"px";
+    });
+  }
 
-window.mostrarTodasLasFechas=function(e,edge){
+  function showDates(evt,edgeId,pinned){
+    const edge=findGraphEdge(edgeId);
+    const pop=document.getElementById("graphDatePopover");
+    if(!edge||!pop)return;
 
- const fechas=fechasReales(edge);
+    const nodes=new Map((graphState.fullNet?.nodes||graphState.visibleNet?.nodes||[]).map(n=>[n.id,n]));
+    const source=nodes.get(edge.source)?.label||edge.source;
+    const target=nodes.get(edge.target)?.label||edge.target;
+    const events=edgeEvents(edge);
 
- const box=document.getElementById("linkHistoryBox");
- if(!box)return;
+    const rows=events.map((event,index)=>{
+      const raw=event?.date||event?.fecha||event?.fecha_hora||"";
+      const date=graphDateKey(raw);
+      const time=graphFormatTimeInput(raw)||"Hora no registrada";
+      const kind=event?.kind||event?.tipo||graphRelationText(edge.relation);
+      const note=event?.note||event?.operadora||"";
+      return `<div class="graph-date-pop-item">
+        <div class="graph-date-pop-index">${index+1}</div>
+        <div><b>${esc(date)} · ${esc(time)}</b><span>${esc(kind)}${note?` · ${esc(note)}`:""}</span></div>
+      </div>`;
+    }).join("");
 
- box.innerHTML=
- `<h4>📅 HISTORIAL DEL VÍNCULO (${fechas.length})</h4>`+
- (fechas.length?
- fechas.map((f,i)=>`<div class="link-history-item">📌 ${i+1}. ${f}</div>`).join("")
- :
- `<div class="link-history-item">Sin fechas registradas</div>`);
+    pop.innerHTML=`
+      <div class="graph-date-pop-head">
+        <div><b>📅 TODAS LAS FECHAS DEL VÍNCULO (${events.length})</b><span>${esc(source)} ↔ ${esc(target)}<br>${esc(graphRelationText(edge.relation))}</span></div>
+        <button class="graph-date-pop-close" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <div class="graph-date-pop-list">${rows||'<div class="graph-date-pop-empty">Este vínculo no tiene fechas registradas.</div>'}</div>
+      <div class="graph-date-pop-foot">Al pasar el cursor se muestra el historial. Con un clic queda abierto; pulsa × o haz clic fuera para cerrarlo.</div>`;
 
- box.style.display="block";
- box.style.left=(e.clientX+15)+"px";
- box.style.top=(e.clientY+15)+"px";
-};
+    pop.querySelector(".graph-date-pop-close")?.addEventListener("click",e=>{
+      e.preventDefault();e.stopPropagation();hideDates(true);
+    });
 
+    if(pinned)popPinned=true;
+    lastEdgeId=edgeId;
+    pop.classList.toggle("pinned",popPinned);
+    pop.classList.add("show");
+    pop.setAttribute("aria-hidden","false");
+    positionPopover(evt);
+  }
 
-// Busca la relación real cuando el usuario hace click encima de una línea
-document.addEventListener("click",function(e){
+  function hideDates(force){
+    if(popPinned&&!force)return;
+    const pop=document.getElementById("graphDatePopover");
+    if(!pop)return;
+    popPinned=false;
+    lastEdgeId="";
+    pop.classList.remove("show","pinned");
+    pop.setAttribute("aria-hidden","true");
+  }
 
- let el=e.target.closest(".link,.edge,.relation,.graph-link,.links path");
+  window.closeGraphDatePopover=function(){hideDates(true)};
 
- if(!el)return;
+  // Ejecutar después de cada redibujado del grafo.
+  if(typeof graphEnhanceRenderedEdges==="function"){
+    const previousEnhance=graphEnhanceRenderedEdges;
+    graphEnhanceRenderedEdges=function(){
+      previousEnhance();
+      assignEdgeIds();
+    };
+  }
 
- let edge=null;
+  assignEdgeIds();
 
- const id=el.dataset.id || el.getAttribute("data-id");
+  document.addEventListener("pointermove",function(e){
+    const edgeId=edgeIdFromTarget(e.target);
+    if(!edgeId||popPinned)return;
+    showDates(e,edgeId,false);
+  },true);
 
- if(id && window.graphState){
-   edge=
-   graphState.fullNet?.edges?.find(x=>x.id==id) ||
-   graphState.visibleNet?.edges?.find(x=>x.id==id);
- }
+  document.addEventListener("pointerout",function(e){
+    if(popPinned)return;
+    const from=e.target?.closest?.(".edge-date-pill,.graph-edge-clickable,.links path");
+    if(!from)return;
+    const to=e.relatedTarget?.closest?.(".edge-date-pill,.graph-edge-clickable,.links path");
+    if(from!==to)hideDates(false);
+  },true);
 
- // fallback por datos embebidos
- if(!edge && el.__data__) edge=el.__data__;
+  // Captura antes de los manejadores antiguos para evitar el tooltip negro o modales superpuestos.
+  document.addEventListener("click",function(e){
+    const edgeId=edgeIdFromTarget(e.target);
+    if(edgeId){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      popPinned=true;
+      showDates(e,edgeId,true);
+      return;
+    }
+    if(popPinned&&!e.target.closest?.("#graphDatePopover"))hideDates(true);
+  },true);
 
- if(edge){
+  document.addEventListener("dblclick",function(e){
+    const edgeId=edgeIdFromTarget(e.target);
+    if(!edgeId)return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    popPinned=true;
+    showDates(e,edgeId,true);
+  },true);
 
-   const fechas=fechasReales(edge);
+  document.addEventListener("keydown",function(e){
+    if(e.key==="Escape"){
+      hideDates(true);
+      return;
+    }
+    if(e.key!=="Delete"&&e.key!=="Backspace")return;
+    const active=document.activeElement;
+    if(active&&["INPUT","TEXTAREA","SELECT"].includes(active.tagName))return;
+    if(document.querySelector(".graph-modal.show"))return;
+    if(typeof graphState!=="undefined"&&graphState.options?.selectedId&&typeof deleteSelectedGraphNode==="function"){
+      e.preventDefault();
+      deleteSelectedGraphNode();
+    }
+  },true);
 
-   if(fechas.length>0){
-      mostrarTodasLasFechas(e,edge);
-   }
-
- }
-
-});
-
-
-// También al pasar cursor por líneas SVG
-document.addEventListener("mouseover",function(e){
-
- let el=e.target.closest(".link,.edge,.relation,.graph-link,.links path");
-
- if(!el)return;
-
- let edge=null;
- const id=el.dataset.id || el.getAttribute("data-id");
-
- if(window.graphState && id){
-   edge=
-   graphState.fullNet?.edges?.find(x=>x.id==id) ||
-   graphState.visibleNet?.edges?.find(x=>x.id==id);
- }
-
- if(edge){
-   const fechas=fechasReales(edge);
-   el.title="📅 "+(fechas.length?fechas.join("\n"):"Sin fechas");
- }
-
-});
-
-
-// ELIMINAR CON TECLA SUPR
-document.addEventListener("keydown",function(e){
-
- if(e.key!=="Delete" && e.key!=="Backspace")return;
-
- const a=document.activeElement;
- if(a && ["INPUT","TEXTAREA","SELECT"].includes(a.tagName))return;
-
- let nodo=
- window.intelNodeActual ||
- window.selectedGraphNode ||
- window.graphSelectedNode;
-
- if(!nodo)return;
-
- e.preventDefault();
-
- const id=nodo.dataset?.id || nodo.getAttribute?.("data-id");
-
- if(confirm("¿Eliminar elemento seleccionado?")){
-
-   if(id){
-      localStorage.setItem("deleted_"+id,"true");
-   }
-
-   nodo.remove();
-
-   window.intelNodeActual=null;
-
-   if(typeof renderAll==="function"){
-      try{renderAll(CURRENT,"");}catch(err){}
-   }
-
-   if(typeof toast==="function")
-      toast("Elemento eliminado con Suprimir");
- }
-
-});
-
-
+  window.addEventListener("resize",()=>{
+    if(lastEdgeId)hideDates(true);
+  });
 })();
 </script>
-<!-- ================= FIN FIX V6 ================= -->
+<!-- ================= FIN SOLUCIÓN DEFINITIVA V7 ================= -->
+
+
+<script id="professional-user-access-script">
+(function(){
+  "use strict";
+
+  const SESSION_KEY="DIVINCRI_USER_SESSION";
+  const USERS_KEY="DIVINCRI_USER_LOGS";
+  const ADMIN_NAME="ADMINISTRADOR";
+  const ACTIVE_WINDOW_MS=15*60*1000;
+  let currentSession=null;
+  let heartbeatTimer=null;
+  let elapsedTimer=null;
+  let lastLocalTouch=0;
+
+  const $=id=>document.getElementById(id);
+  const safeJSON=(value,fallback)=>{try{return JSON.parse(value)}catch(e){return fallback}};
+  const nowISO=()=>new Date().toISOString();
+  const normalizeName=value=>String(value||"").trim().replace(/\s+/g,"_").replace(/[^a-zA-Z0-9_\-.ÁÉÍÓÚÜÑáéíóúüñ]/g,"").slice(0,24);
+  const escapeHTML=value=>String(value??"").replace(/[&<>'"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[ch]));
+  const formatDate=value=>{
+    const date=new Date(value);if(Number.isNaN(date.getTime()))return "Sin fecha";
+    return new Intl.DateTimeFormat("es-PE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:false}).format(date);
+  };
+  const browserName=()=>{
+    const ua=navigator.userAgent;
+    if(/Edg\//.test(ua))return "Microsoft Edge";
+    if(/OPR\//.test(ua))return "Opera";
+    if(/Chrome\//.test(ua))return "Google Chrome";
+    if(/Firefox\//.test(ua))return "Mozilla Firefox";
+    if(/Safari\//.test(ua))return "Safari";
+    return "Navegador web";
+  };
+  const isAdmin=session=>String(session?.username||"").toUpperCase()===ADMIN_NAME;
+
+  function readUsers(){
+    const users=safeJSON(localStorage.getItem(USERS_KEY)||"[]",[]);
+    return Array.isArray(users)?users:[];
+  }
+
+  function writeUsers(users){
+    localStorage.setItem(USERS_KEY,JSON.stringify(users.slice(0,150)));
+  }
+
+  function upsertLocalSession(session){
+    const users=readUsers();
+    const index=users.findIndex(item=>item.id===session.id);
+    if(index>=0)users[index]={...users[index],...session};else users.unshift(session);
+    users.sort((a,b)=>new Date(b.fechaIngresoISO||0)-new Date(a.fechaIngresoISO||0));
+    writeUsers(users);
+  }
+
+  function sessionPayload(username){
+    const when=new Date();
+    const random=(crypto?.randomUUID?.()||("session_"+Date.now()+"_"+Math.random().toString(36).slice(2))).replace(/[^a-zA-Z0-9_-]/g,"");
+    return {
+      id:random,
+      username,
+      fechaIngresoISO:when.toISOString(),
+      ultimaActividadISO:when.toISOString(),
+      fechaIngresoLocal:formatDate(when),
+      navegador:browserName(),
+      userAgent:navigator.userAgent,
+      pantalla:window.innerWidth+"x"+window.innerHeight,
+      pagina:location.pathname||"/",
+      estado:"ACTIVO"
+    };
+  }
+
+  function storeCurrentSession(session){
+    currentSession=session;
+    localStorage.setItem(SESSION_KEY,JSON.stringify(session));
+    upsertLocalSession(session);
+  }
+
+  async function syncFirebase(session){
+    if(typeof window.guardarUsuarioPruebaFirebase==="function"){
+      try{return await window.guardarUsuarioPruebaFirebase(session)}catch(e){return false}
+    }
+    return false;
+  }
+
+  function updateAdminVisibility(){
+    const admin=isAdmin(currentSession);
+    $("navUserAdmin")?.classList.toggle("show",admin);
+    if($("dropdownUsersButton"))$("dropdownUsersButton").style.display=admin?"inline-flex":"none";
+  }
+
+  function updateSessionUI(){
+    if(!currentSession)return;
+    const username=currentSession.username;
+    $("activeUsername").textContent=username;
+    $("dropdownUsername").textContent=username;
+    $("userAvatar").textContent=(username.charAt(0)||"U").toUpperCase();
+    $("dropdownStarted").textContent="Ingreso: "+formatDate(currentSession.fechaIngresoISO);
+    $("sessionArea").classList.add("show");
+    updateAdminVisibility();
+    updateElapsed();
+  }
+
+  function updateElapsed(){
+    if(!currentSession)return;
+    const elapsed=Math.max(0,Date.now()-new Date(currentSession.fechaIngresoISO).getTime());
+    const mins=Math.floor(elapsed/60000);
+    const hours=Math.floor(mins/60);
+    const label=hours?`${hours} h ${mins%60} min`:`${mins} min`;
+    if($("sessionElapsed"))$("sessionElapsed").textContent=label;
+  }
+
+  function closeGate(){
+    document.body.classList.remove("user-gate-open");
+    $("professionalLoginGate")?.classList.add("closed");
+    setTimeout(()=>$("professionalLoginGate")?.setAttribute("aria-hidden","true"),240);
+  }
+
+  function openGate(){
+    document.body.classList.add("user-gate-open");
+    $("professionalLoginGate")?.classList.remove("closed");
+    $("professionalLoginGate")?.setAttribute("aria-hidden","false");
+    setTimeout(()=>$("professionalUsername")?.focus(),60);
+  }
+
+  function validateUsername(showError=true){
+    const input=$("professionalUsername");
+    const normalized=normalizeName(input?.value);
+    if(input&&input.value!==normalized)input.value=normalized;
+    const ok=normalized.length>=3;
+    $("professionalUsernameField")?.classList.toggle("valid",ok);
+    if(showError&&$("professionalLoginError")){
+      $("professionalLoginError").textContent=ok?"":"Usa al menos 3 caracteres. Se permiten letras, números, punto, guion y guion bajo.";
+    }
+    return ok?normalized:"";
+  }
+
+  async function login(username){
+    const session=sessionPayload(username);
+    storeCurrentSession(session);
+    updateSessionUI();
+    closeGate();
+    syncFirebase(session);
+    if(typeof window.registrarActividad==="function")window.registrarActividad("INICIO_SESION_USUARIO",{username,fechaIngresoISO:session.fechaIngresoISO});
+    if(typeof window.toast==="function")window.toast("Bienvenido, "+username+". Sesión identificada correctamente.");
+    startTimers();
+  }
+
+  async function touchSession(force=false){
+    if(!currentSession)return;
+    const now=Date.now();
+    if(!force&&now-lastLocalTouch<45000)return;
+    lastLocalTouch=now;
+    currentSession.ultimaActividadISO=nowISO();
+    currentSession.estado="ACTIVO";
+    localStorage.setItem(SESSION_KEY,JSON.stringify(currentSession));
+    upsertLocalSession(currentSession);
+    if(force)syncFirebase(currentSession);
+  }
+
+  function startTimers(){
+    clearInterval(heartbeatTimer);clearInterval(elapsedTimer);
+    elapsedTimer=setInterval(updateElapsed,30000);
+    heartbeatTimer=setInterval(()=>touchSession(true),4*60*1000);
+  }
+
+  async function logout(){
+    if(!currentSession)return;
+    const ended={...currentSession,estado:"DESCONECTADO",fechaSalidaISO:nowISO(),ultimaActividadISO:nowISO()};
+    upsertLocalSession(ended);
+    syncFirebase(ended);
+    if(typeof window.registrarActividad==="function")window.registrarActividad("CIERRE_SESION_USUARIO",{username:ended.username,fechaSalidaISO:ended.fechaSalidaISO});
+    localStorage.removeItem(SESSION_KEY);
+    currentSession=null;
+    clearInterval(heartbeatTimer);clearInterval(elapsedTimer);
+    $("sessionArea")?.classList.remove("show");
+    $("sessionDropdown")?.classList.remove("show");
+    $("navUserAdmin")?.classList.remove("show");
+    $("professionalUsername").value="";
+    $("professionalUsernameField")?.classList.remove("valid");
+    $("professionalLoginError").textContent="";
+    openGate();
+  }
+
+  function renderUsers(users,origin){
+    const clean=Array.isArray(users)?users.filter(Boolean):[];
+    const unique=new Set(clean.map(item=>String(item.username||"").toLowerCase()).filter(Boolean)).size;
+    const active=clean.filter(item=>item.estado==="ACTIVO"&&(Date.now()-new Date(item.ultimaActividadISO||item.fechaIngresoISO||0).getTime())<=ACTIVE_WINDOW_MS).length;
+    $("usersTotalCount").textContent=clean.length;
+    $("usersActiveCount").textContent=active;
+    $("usersUniqueCount").textContent=unique;
+    $("usersDataOrigin").textContent=origin;
+
+    if(!clean.length){
+      $("usersTableWrap").innerHTML='<div class="users-empty">Todavía no existen sesiones registradas.</div>';
+      return;
+    }
+    const rows=clean.map(item=>{
+      const recent=item.estado==="ACTIVO"&&(Date.now()-new Date(item.ultimaActividadISO||item.fechaIngresoISO||0).getTime())<=ACTIVE_WINDOW_MS;
+      return `<tr>
+        <td><b>${escapeHTML(item.username||"Sin usuario")}</b><br><small>${escapeHTML(item.id||"")}</small></td>
+        <td>${escapeHTML(formatDate(item.fechaIngresoISO))}</td>
+        <td>${escapeHTML(formatDate(item.ultimaActividadISO||item.fechaIngresoISO))}</td>
+        <td>${escapeHTML(item.navegador||"No identificado")}<br><small>${escapeHTML(item.pantalla||"")}</small></td>
+        <td><span class="user-status-badge ${recent?"active":"closed"}">${recent?"Activo":"Registrado"}</span></td>
+      </tr>`;
+    }).join("");
+    $("usersTableWrap").innerHTML=`<table><thead><tr><th>Usuario</th><th>Ingreso</th><th>Última actividad</th><th>Dispositivo</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  async function loadUsers(){
+    const refresh=$("refreshUsersButton");
+    if(refresh){refresh.disabled=true;refresh.textContent="Actualizando…";}
+    let firebaseUsers=[];
+    if(typeof window.obtenerUsuariosPruebaFirebase==="function"){
+      try{firebaseUsers=await window.obtenerUsuariosPruebaFirebase()}catch(e){firebaseUsers=[]}
+    }
+    if(firebaseUsers.length){
+      renderUsers(firebaseUsers,"Datos consolidados desde Firebase Firestore.");
+    }else{
+      renderUsers(readUsers(),"Mostrando el registro disponible en este navegador. Configura Firebase para consolidar otros dispositivos.");
+    }
+    if(refresh){refresh.disabled=false;refresh.textContent="↻ Actualizar";}
+  }
+
+  function openUsersModal(){
+    if(!isAdmin(currentSession)){
+      if(typeof window.toast==="function")window.toast("El panel de usuarios está reservado al alias ADMINISTRADOR en esta versión de prueba.");
+      return;
+    }
+    $("sessionDropdown")?.classList.remove("show");
+    $("usersModalOverlay")?.classList.add("show");
+    $("usersModalOverlay")?.setAttribute("aria-hidden","false");
+    loadUsers();
+  }
+
+  function closeUsersModal(){
+    $("usersModalOverlay")?.classList.remove("show");
+    $("usersModalOverlay")?.setAttribute("aria-hidden","true");
+  }
+
+  function restoreSession(){
+    const stored=safeJSON(localStorage.getItem(SESSION_KEY)||"null",null);
+    if(stored?.username&&stored?.id){
+      currentSession={...stored,estado:"ACTIVO",ultimaActividadISO:nowISO()};
+      storeCurrentSession(currentSession);
+      updateSessionUI();
+      closeGate();
+      touchSession(true);
+      startTimers();
+    }else{
+      openGate();
+    }
+  }
+
+  $("professionalUsername")?.addEventListener("input",()=>validateUsername(false));
+  $("professionalLoginForm")?.addEventListener("submit",event=>{
+    event.preventDefault();
+    const username=validateUsername(true);
+    if(username)login(username);
+  });
+  $("userSessionButton")?.addEventListener("click",event=>{
+    event.stopPropagation();
+    const dropdown=$("sessionDropdown");
+    const show=!dropdown.classList.contains("show");
+    dropdown.classList.toggle("show",show);
+    $("userSessionButton").setAttribute("aria-expanded",String(show));
+    updateElapsed();
+  });
+  $("logoutUserButton")?.addEventListener("click",logout);
+  $("navUserAdmin")?.addEventListener("click",openUsersModal);
+  $("dropdownUsersButton")?.addEventListener("click",openUsersModal);
+  $("usersModalClose")?.addEventListener("click",closeUsersModal);
+  $("refreshUsersButton")?.addEventListener("click",loadUsers);
+  $("usersModalOverlay")?.addEventListener("click",event=>{if(event.target===$("usersModalOverlay"))closeUsersModal()});
+
+  document.addEventListener("click",event=>{
+    if(!event.target.closest?.("#sessionArea")){
+      $("sessionDropdown")?.classList.remove("show");
+      $("userSessionButton")?.setAttribute("aria-expanded","false");
+    }
+    touchSession(false);
+  },true);
+  document.addEventListener("keydown",event=>{
+    if(event.key==="Escape"){
+      $("sessionDropdown")?.classList.remove("show");
+      closeUsersModal();
+    }
+    touchSession(false);
+  },true);
+  window.addEventListener("beforeunload",()=>{
+    if(!currentSession)return;
+    currentSession.ultimaActividadISO=nowISO();
+    localStorage.setItem(SESSION_KEY,JSON.stringify(currentSession));
+    upsertLocalSession(currentSession);
+  });
+
+  restoreSession();
+})();
+</script>
 
 </body>
 </html>
