@@ -1422,6 +1422,12 @@ window.addEventListener("error",(e)=>{
   }
 </style>
 
+
+<style>
+.graph-layout-modes{display:flex;gap:8px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid #dbe5de;background:#fff}
+.graph-layout-modes button{background:#fff;color:#073d25;border:1px solid #cbdacf;box-shadow:none;min-height:36px}
+.graph-layout-modes button.active{background:linear-gradient(180deg,#0d6b41,#052b1b);color:#fff}
+</style>
 </head>
 <body class="user-gate-open">
 
@@ -1770,7 +1776,31 @@ window.addEventListener("error",(e)=>{
               </div>
             </div>
           </div>
-          <div id="graphWrap">
+          
+<div class="graph-layout-modes" id="graphModes">
+<button data-mode="radial">⭕ Telaraña Redonda</button>
+<button data-mode="tree">🌳 Telaraña Jerárquica</button>
+<button data-mode="force">🕸 Red Fuerza</button>
+<button data-mode="matrix">▦ Matriz</button>
+<button data-mode="auto" class="active">⚙ Automático</button>
+</div>
+<script>
+(function(){
+ const buttons=document.querySelectorAll('#graphModes button');
+ buttons.forEach(b=>b.addEventListener('click',()=>{
+  buttons.forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  const mode=b.dataset.mode;
+  window.graphViewMode=mode;
+  // Intenta reutilizar motores existentes del grafo
+  if(typeof applyGraphLayout==='function') applyGraphLayout(mode);
+  else if(typeof renderGraph==='function') renderGraph();
+  else if(typeof drawGraph==='function') drawGraph();
+  console.log('Modo grafo:',mode);
+ }));
+})();
+</script>
+<div id="graphWrap">
             <svg id="graph" role="img" aria-label="Grafo relacional de inteligencia"></svg>
             <div class="graph-tooltip" id="graphTooltip"></div>
           </div>
