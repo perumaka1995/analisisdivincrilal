@@ -3432,12 +3432,73 @@ function resetGraphView(){graphState.transform={x:0,y:0,k:1};graphApplyTransform
 function restartGraphLayout(){renderGraph(graphState.records.length?graphState.records:CURRENT,graphState.query||CURRENT_QUERY);toast("Distribución relacional recalculada.")}
 async function exportGraphPNG(){
   try{
-    const svg=document.getElementById("graph");if(!svg||!svg.childNodes.length){toast("No existe un grafo para exportar.");return}
-    const clone=svg.cloneNode(true);clone.setAttribute("xmlns","http://www.w3.org/2000/svg");
-    const xml=new XMLSerializer().serializeToString(clone),blob=new Blob([xml],{type:"image/svg+xml;charset=utf-8"}),url=URL.createObjectURL(blob),img=new Image();
-    img.onload=()=>{const canvas=document.createElement("canvas");canvas.width=Math.max(1600,graphState.W*1.35);canvas.height=Math.max(950,graphState.H*1.35);const ctx=canvas.getContext("2d");ctx.fillStyle="#f8fbf9";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);const a=document.createElement("a");a.href=canvas.toDataURL("image/png",.96);a.download="grafo_relacional_divincri.png";a.click();toast("Grafo exportado en PNG.")};
-    img.onerror=()=>{URL.revokeObjectURL(url);toast("No se pudo exportar el grafo.")};img.src=url;
-  }catch(err){console.error(err);toast("No se pudo exportar el grafo.")}
+    const svg=document.getElementById("graph");
+    if(!svg||!svg.childNodes.length){
+      toast("No existe un grafo para exportar.");
+      return;
+    }
+
+    // Clon limpio para exportación HD
+    const clone=svg.cloneNode(true);
+    clone.setAttribute("xmlns","http://www.w3.org/2000/svg");
+
+    // Elimina estados visuales que generan bordes negros al exportar
+    clone.querySelectorAll(".selected,.active,.focus,.selection").forEach(el=>{
+      el.classList.remove("selected","active","focus","selection");
+    });
+
+    clone.querySelectorAll("*").forEach(el=>{
+      const style=el.getAttribute("style")||"";
+      el.setAttribute("style", style
+        .replace(/outline:[^;]+;?/gi,"")
+        .replace(/box-shadow:[^;]+;?/gi,"")
+      );
+    });
+
+    const xml=new XMLSerializer().serializeToString(clone);
+    const blob=new Blob([xml],{type:"image/svg+xml;charset=utf-8"});
+    const url=URL.createObjectURL(blob);
+    const img=new Image();
+
+    img.onload=()=>{
+      const scale=4; // Exportación HD
+      const width=Math.max(2400,(graphState?.W||1600)*scale);
+      const height=Math.max(1400,(graphState?.H||950)*scale);
+
+      const canvas=document.createElement("canvas");
+      canvas.width=width;
+      canvas.height=height;
+
+      const ctx=canvas.getContext("2d");
+      ctx.imageSmoothingEnabled=true;
+      ctx.imageSmoothingQuality="high";
+
+      ctx.fillStyle="#f8fbf9";
+      ctx.fillRect(0,0,width,height);
+
+      ctx.drawImage(img,0,0,width,height);
+
+      URL.revokeObjectURL(url);
+
+      const a=document.createElement("a");
+      a.href=canvas.toDataURL("image/png",1.0);
+      a.download="grafo_relacional_divincri_HD.png";
+      a.click();
+
+      toast("Grafo exportado en PNG HD.");
+    };
+
+    img.onerror=()=>{
+      URL.revokeObjectURL(url);
+      toast("No se pudo exportar el grafo.");
+    };
+
+    img.src=url;
+
+  }catch(err){
+    console.error(err);
+    toast("No se pudo exportar el grafo.");
+  }
 }
 function toggleGraphFull(){
   const view=document.getElementById("graphView");if(!view)return;
