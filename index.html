@@ -1428,6 +1428,23 @@ window.addEventListener("error",(e)=>{
 .graph-layout-modes button{background:#fff;color:#073d25;border:1px solid #cbdacf;box-shadow:none;min-height:36px}
 .graph-layout-modes button.active{background:linear-gradient(180deg,#0d6b41,#052b1b);color:#fff}
 </style>
+
+<style id="export-hd-clean-fix">
+/* Exportación HD: evita sombras negras en etiquetas de fechas */
+.export-mode .edge-date-labels .edge-date-pill,
+.export-mode .edge-date-labels .edge-date-pill rect {
+    filter:none !important;
+    box-shadow:none !important;
+    stroke-width:1 !important;
+}
+.export-mode .edge-date-labels .edge-date-pill:focus rect:not(.edge-date-hit){
+    filter:none !important;
+    stroke-width:1 !important;
+}
+.export-mode * {
+    text-shadow:none !important;
+}
+</style>
 </head>
 <body class="user-gate-open">
 
