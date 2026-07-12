@@ -1793,10 +1793,20 @@ window.addEventListener("error",(e)=>{
   const mode=b.dataset.mode;
   window.graphViewMode=mode;
   // Intenta reutilizar motores existentes del grafo
-  if(typeof applyGraphLayout==='function') applyGraphLayout(mode);
-  else if(typeof renderGraph==='function') renderGraph();
-  else if(typeof drawGraph==='function') drawGraph();
-  console.log('Modo grafo:',mode);
+  /*
+    CAMBIO: los modos NO deben reconstruir el grafo.
+    Solo deben cambiar posiciones usando la misma base cargada.
+  */
+  if(typeof applyGraphLayout==='function'){
+      applyGraphLayout(mode);
+  }else{
+      console.warn('No existe motor de layout. Se mantiene el grafo actual.');
+  }
+  // Mantener datos cargados, selección y vínculos
+  if(window.grafoOriginal){
+      window.grafoOriginal.modo = mode;
+  }
+  console.log('Modo grafo conservado:',mode);
  }));
 })();
 </script>
