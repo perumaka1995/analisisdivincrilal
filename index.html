@@ -1541,6 +1541,130 @@ window.addEventListener("error",e=>{
   }
 </style>
 
+
+<style id="graph-fullscreen-export-fix">
+  /* Pantalla completa real: todo el panel cabe sin desplazamiento vertical. */
+  body.graph-full-open{overflow:hidden!important}
+
+  #graphView:fullscreen,
+  #graphView.fullscreen-fallback{
+    position:fixed!important;
+    inset:0!important;
+    z-index:99999!important;
+    display:flex!important;
+    flex-direction:column!important;
+    width:100vw!important;
+    height:100vh!important;
+    height:100dvh!important;
+    min-height:100vh!important;
+    min-height:100dvh!important;
+    overflow:hidden!important;
+    background:#f8fbf9!important;
+  }
+
+  #graphView:fullscreen .graph-head,
+  #graphView:fullscreen .graph-toolbar,
+  #graphView:fullscreen .graph-control-deck,
+  #graphView:fullscreen .graph-layout-modes,
+  #graphView.fullscreen-fallback .graph-head,
+  #graphView.fullscreen-fallback .graph-toolbar,
+  #graphView.fullscreen-fallback .graph-control-deck,
+  #graphView.fullscreen-fallback .graph-layout-modes{
+    flex:0 0 auto!important;
+  }
+
+  #graphView:fullscreen .graph-head,
+  #graphView.fullscreen-fallback .graph-head{
+    padding:8px 12px!important;
+  }
+
+  #graphView:fullscreen .graph-toolbar,
+  #graphView.fullscreen-fallback .graph-toolbar{
+    min-height:44px!important;
+    padding:5px 10px!important;
+  }
+
+  #graphView:fullscreen .graph-control-deck,
+  #graphView.fullscreen-fallback .graph-control-deck{
+    padding:7px 10px!important;
+  }
+
+  #graphView:fullscreen .graph-control-row,
+  #graphView.fullscreen-fallback .graph-control-row{
+    gap:7px!important;
+  }
+
+  #graphView:fullscreen .graph-filter-row,
+  #graphView.fullscreen-fallback .graph-filter-row{
+    margin-top:6px!important;
+    padding-top:6px!important;
+  }
+
+  #graphView:fullscreen .graph-layout-modes,
+  #graphView.fullscreen-fallback .graph-layout-modes{
+    padding:5px 10px!important;
+    gap:5px!important;
+    flex-wrap:nowrap!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+  }
+
+  #graphView:fullscreen .graph-layout-modes button,
+  #graphView.fullscreen-fallback .graph-layout-modes button{
+    min-height:31px!important;
+    padding:0 9px!important;
+    flex:0 0 auto!important;
+  }
+
+  #graphView:fullscreen #graphWrap,
+  #graphView.fullscreen-fallback #graphWrap{
+    flex:1 1 0%!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:hidden!important;
+  }
+
+  #graphView:fullscreen #graph,
+  #graphView.fullscreen-fallback #graph{
+    width:100%!important;
+    height:100%!important;
+  }
+
+  #graphView:fullscreen .legend,
+  #graphView.fullscreen-fallback .legend{
+    display:none!important;
+  }
+
+  #graphView:fullscreen .graph-help,
+  #graphView.fullscreen-fallback .graph-help{
+    display:none!important;
+  }
+
+  @media(max-height:760px){
+    #graphView:fullscreen .graph-head,
+    #graphView.fullscreen-fallback .graph-head{
+      padding:5px 9px!important;
+    }
+
+    #graphView:fullscreen .graph-title span,
+    #graphView.fullscreen-fallback .graph-title span,
+    #graphView:fullscreen .graph-toolbar-note,
+    #graphView.fullscreen-fallback .graph-toolbar-note,
+    #graphView:fullscreen .graph-control-label,
+    #graphView.fullscreen-fallback .graph-control-label{
+      display:none!important;
+    }
+
+    #graphView:fullscreen .graph-filter-row,
+    #graphView.fullscreen-fallback .graph-filter-row{
+      margin-top:4px!important;
+      padding-top:4px!important;
+    }
+  }
+</style>
+
 </head>
 <body class="user-gate-open">
 
@@ -3575,20 +3699,57 @@ async function exportGraphPNG(){
       return;
     }
 
-    // Clon limpio para exportación HD
     const clone=svg.cloneNode(true);
     clone.setAttribute("xmlns","http://www.w3.org/2000/svg");
+    clone.setAttribute("width",String(graphState?.W||1600));
+    clone.setAttribute("height",String(graphState?.H||950));
 
-    // Elimina estados visuales que generan bordes negros al exportar
+    // Limpia selección y controles interactivos antes de generar la imagen.
     clone.querySelectorAll(".selected,.active,.focus,.selection").forEach(el=>{
       el.classList.remove("selected","active","focus","selection");
     });
 
+    clone.querySelectorAll("[tabindex]").forEach(el=>el.removeAttribute("tabindex"));
+    clone.querySelectorAll("[role='button']").forEach(el=>el.removeAttribute("role"));
+
+    // Las áreas transparentes para hacer clic no deben aparecer en la exportación.
+    clone.querySelectorAll(".edge-date-hit").forEach(el=>el.remove());
+
+    // Fechas limpias: sin contornos oscuros, sombras ni trazos ampliados por la exportación HD.
+    clone.querySelectorAll(".edge-date-pill").forEach(pill=>{
+      pill.removeAttribute("filter");
+      pill.setAttribute("style","filter:none!important;outline:none!important");
+
+      pill.querySelectorAll("rect").forEach(rect=>{
+        rect.setAttribute("stroke","none");
+        rect.setAttribute("stroke-width","0");
+        rect.removeAttribute("filter");
+        rect.setAttribute(
+          "style",
+          "filter:none!important;box-shadow:none!important;stroke:none!important;stroke-width:0!important"
+        );
+      });
+
+      pill.querySelectorAll("text").forEach(text=>{
+        text.setAttribute("stroke","none");
+        text.setAttribute("stroke-width","0");
+        text.setAttribute("paint-order","normal");
+        text.removeAttribute("filter");
+        text.setAttribute(
+          "style",
+          "filter:none!important;text-shadow:none!important;stroke:none!important;paint-order:normal!important"
+        );
+      });
+    });
+
     clone.querySelectorAll("*").forEach(el=>{
       const style=el.getAttribute("style")||"";
-      el.setAttribute("style", style
-        .replace(/outline:[^;]+;?/gi,"")
-        .replace(/box-shadow:[^;]+;?/gi,"")
+      el.setAttribute(
+        "style",
+        style
+          .replace(/outline:[^;]+;?/gi,"")
+          .replace(/box-shadow:[^;]+;?/gi,"")
+          .replace(/text-shadow:[^;]+;?/gi,"")
       );
     });
 
@@ -3598,9 +3759,11 @@ async function exportGraphPNG(){
     const img=new Image();
 
     img.onload=()=>{
-      const scale=4; // Exportación HD
-      const width=Math.max(2400,(graphState?.W||1600)*scale);
-      const height=Math.max(1400,(graphState?.H||950)*scale);
+      const scale=4;
+      const baseWidth=Math.max(900,graphState?.W||1600);
+      const baseHeight=Math.max(520,graphState?.H||950);
+      const width=Math.max(2400,Math.round(baseWidth*scale));
+      const height=Math.max(1400,Math.round(baseHeight*scale));
 
       const canvas=document.createElement("canvas");
       canvas.width=width;
@@ -3612,17 +3775,38 @@ async function exportGraphPNG(){
 
       ctx.fillStyle="#f8fbf9";
       ctx.fillRect(0,0,width,height);
-
       ctx.drawImage(img,0,0,width,height);
+
+      // Marca referencial pequeña, interior y semitransparente.
+      const exportScale=width/baseWidth;
+      const fontSize=Math.max(38,Math.round(12.5*exportScale));
+      const margin=Math.max(58,Math.round(20*exportScale));
+
+      ctx.save();
+      ctx.globalAlpha=0.27;
+      ctx.fillStyle="#073d25";
+      ctx.textAlign="right";
+      ctx.textBaseline="bottom";
+      ctx.font=`800 ${fontSize}px "Segoe UI",Arial,sans-serif`;
+      ctx.letterSpacing=`${Math.max(1,Math.round(exportScale*.45))}px`;
+      ctx.fillText("ANÁLISIS REFERENCIAL",width-margin,height-margin);
+      ctx.restore();
 
       URL.revokeObjectURL(url);
 
-      const a=document.createElement("a");
-      a.href=canvas.toDataURL("image/png",1.0);
-      a.download="grafo_relacional_divincri_HD.png";
-      a.click();
-
-      toast("Grafo exportado en PNG HD.");
+      canvas.toBlob(pngBlob=>{
+        if(!pngBlob){
+          toast("No se pudo crear la imagen PNG.");
+          return;
+        }
+        const pngUrl=URL.createObjectURL(pngBlob);
+        const a=document.createElement("a");
+        a.href=pngUrl;
+        a.download="grafo_relacional_divincri_HD.png";
+        a.click();
+        setTimeout(()=>URL.revokeObjectURL(pngUrl),1200);
+        toast("Grafo exportado en PNG HD sin bordes oscuros.");
+      },"image/png",1.0);
     };
 
     img.onerror=()=>{
@@ -3631,22 +3815,63 @@ async function exportGraphPNG(){
     };
 
     img.src=url;
-
   }catch(err){
     console.error(err);
     toast("No se pudo exportar el grafo.");
   }
 }
-function toggleGraphFull(){
-  const view=document.getElementById("graphView");if(!view)return;
-  if(!document.fullscreenElement&&view.requestFullscreen){view.requestFullscreen().catch(()=>{view.classList.toggle("fullscreen-fallback");setTimeout(()=>renderGraph(CURRENT,CURRENT_QUERY),180)})}
-  else if(document.fullscreenElement)document.exitFullscreen();
-  else{view.classList.toggle("fullscreen-fallback");setTimeout(()=>renderGraph(CURRENT,CURRENT_QUERY),180)}
+function refreshExpandedGraph(){
+  const records=(graphState?.records&&graphState.records.length)?graphState.records:CURRENT;
+  const query=(graphState&&typeof graphState.query==="string")?graphState.query:CURRENT_QUERY;
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      renderGraph(records,query);
+    });
+  });
 }
-document.addEventListener("fullscreenchange",()=>setTimeout(()=>renderGraph(CURRENT,CURRENT_QUERY),180));
+
+function setGraphFallbackFullscreen(enabled){
+  const view=document.getElementById("graphView");
+  if(!view)return;
+  view.classList.toggle("fullscreen-fallback",enabled);
+  document.body.classList.toggle("graph-full-open",enabled);
+  refreshExpandedGraph();
+}
+
+function toggleGraphFull(){
+  const view=document.getElementById("graphView");
+  if(!view)return;
+
+  if(document.fullscreenElement){
+    document.exitFullscreen();
+    return;
+  }
+
+  if(view.classList.contains("fullscreen-fallback")){
+    setGraphFallbackFullscreen(false);
+    return;
+  }
+
+  if(view.requestFullscreen){
+    view.requestFullscreen()
+      .then(()=>refreshExpandedGraph())
+      .catch(()=>setGraphFallbackFullscreen(true));
+  }else{
+    setGraphFallbackFullscreen(true);
+  }
+}
+
+document.addEventListener("fullscreenchange",()=>{
+  document.body.classList.toggle("graph-full-open",!!document.fullscreenElement);
+  setTimeout(refreshExpandedGraph,120);
+});
+
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"){
-    const view=document.getElementById("graphView");if(view?.classList.contains("fullscreen-fallback")){view.classList.remove("fullscreen-fallback");setTimeout(()=>renderGraph(CURRENT,CURRENT_QUERY),180)}
+    const view=document.getElementById("graphView");
+    if(view?.classList.contains("fullscreen-fallback")){
+      setGraphFallbackFullscreen(false);
+    }
   }
 });
 document.getElementById("graphNodeSearch")?.addEventListener("keydown",e=>{if(e.key==="Enter")findGraphNode()});
