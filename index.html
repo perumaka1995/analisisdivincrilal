@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Área de Análisis de Inteligencia - DIVINCRI La Libertad</title>
   <meta name="description" content="Sistema de análisis de inteligencia y vinculaciones por número, IMEI, DNI y operadora.">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -1441,6 +1444,103 @@ window.addEventListener("error",e=>{
     text-shadow:none !important;
 }
 </style>
+
+<style id="global-chart-complete-fix">
+  /* Evita que el gráfico sea comprimido por el alto máximo de la ventana. */
+  .users-modal-card{
+    max-height:94vh !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    scrollbar-gutter:stable;
+  }
+
+  .users-modal-head,
+  .global-users-summary,
+  .global-analytics-tools,
+  .firebase-admin-setup,
+  .global-analytics-panel,
+  .users-table-section-title,
+  .users-modal-note{
+    flex:0 0 auto !important;
+  }
+
+  .users-modal-head{
+    position:sticky;
+    top:0;
+    z-index:20;
+  }
+
+  .global-analytics-panel{
+    overflow:hidden !important;
+  }
+
+  .global-visits-chart{
+    flex:0 0 255px !important;
+    width:100%;
+    height:255px !important;
+    min-height:255px !important;
+    padding:22px 14px 16px !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    align-items:flex-end !important;
+  }
+
+  .global-chart-column{
+    height:100% !important;
+    min-width:38px !important;
+    flex:1 0 38px !important;
+  }
+
+  .global-chart-bar-wrap{
+    height:178px !important;
+    min-height:178px !important;
+    flex:0 0 178px !important;
+  }
+
+  .global-chart-value,
+  .global-chart-label{
+    flex:0 0 auto;
+  }
+
+  .users-table-wrap{
+    flex:0 0 auto !important;
+    min-height:210px !important;
+    max-height:330px !important;
+    overflow:auto !important;
+  }
+
+  @media(max-width:760px){
+    .users-modal-card{max-height:96vh !important}
+    .global-visits-chart{
+      flex-basis:235px !important;
+      height:235px !important;
+      min-height:235px !important;
+    }
+    .global-chart-bar-wrap{
+      height:158px !important;
+      min-height:158px !important;
+      flex-basis:158px !important;
+    }
+    .global-chart-column{
+      min-width:34px !important;
+      flex-basis:34px !important;
+    }
+  }
+
+  @media(max-width:480px){
+    .global-visits-chart{
+      flex-basis:225px !important;
+      height:225px !important;
+      min-height:225px !important;
+    }
+    .global-chart-bar-wrap{
+      height:148px !important;
+      min-height:148px !important;
+      flex-basis:148px !important;
+    }
+  }
+</style>
+
 </head>
 <body class="user-gate-open">
 
@@ -6176,7 +6276,7 @@ window.dispatchEvent(new CustomEvent("divincri:global-analytics-ready"));
     const max=Math.max(1,...series.map(item=>Number(item.views)||0));
     chart.innerHTML=series.map(item=>{
       const value=Math.max(0,Number(item.views)||0);
-      const height=value?Math.max(4,Math.round((value/max)*140)):3;
+      const height=value?Math.max(4,Math.round((value/max)*170)):3;
       return `<div class="global-chart-column" title="${escapeHTML(item.label)}: ${number(value)} vistas, ${number(item.sessions)} sesiones">
         <span class="global-chart-value">${number(value)}</span>
         <div class="global-chart-bar-wrap"><div class="global-chart-bar" style="height:${height}px"></div></div>
