@@ -3651,7 +3651,7 @@ function renderGraph(records,query){
   }
   visible.nodes.forEach(n=>graphRenderNode(n,nodeLayer));graphBindCanvasInteractions();graphApplyTransform();
   graphRestoreSelectionVisuals();
-  const help=document.createElement("div");help.className="graph-help";help.innerHTML=`<span><b>${graphModeName(graphState.options.mode)}:</b> ${visible.nodes.length} nodos visibles. Usa los filtros para ocultar tipos; selecciona un nodo; usa Ctrl/Shift + clic para elegir varios y pulsa Supr para eliminarlos.</span>`;wrap.appendChild(help);
+  const help=document.createElement("div");help.className="graph-help";help.innerHTML=`<span><b>${graphModeName(graphState.options.mode)}:</b> ${visible.nodes.length} nodos visibles. Haz clic en una fecha o en una línea para ver todo el historial. Usa los filtros para ocultar tipos; Ctrl/Shift + clic permite elegir varios y Supr los elimina.</span>`;wrap.appendChild(help);
 }
 function setGraphViewMode(mode){graphState.options.mode=mode;renderGraph(graphState.records.length?graphState.records:CURRENT,graphState.query||CURRENT_QUERY)}
 function toggleGraphLayout(){graphState.options.layout=graphState.options.layout==="radial"?"columns":"radial";renderGraph(graphState.records.length?graphState.records:CURRENT,graphState.query||CURRENT_QUERY)}
@@ -4207,9 +4207,19 @@ graphRelationStyle = function(relation){
 
 function graphEdgeEventSummary(edge){
   const events=(edge.events||[]).slice().sort((a,b)=>parseDatePE(b.date)-parseDatePE(a.date));
-  if(!events.length)return {label:"Sin fecha",extra:0,total:0};
-  const label=graphDateKey(events[0].date);
-  return {label,extra:Math.max(0,events.length-1),total:events.length};
+  const unique=[];
+  const seen=new Set();
+  events.forEach(event=>{
+    const raw=(event?.date||event?.fecha||event?.fecha_hora||"").toString().trim();
+    if(!raw)return;
+    const key=raw;
+    if(seen.has(key))return;
+    seen.add(key);
+    unique.push(event);
+  });
+  if(!unique.length)return {label:"Sin fecha",extra:0,total:0};
+  const label=graphDateKey(unique[0].date||unique[0].fecha||unique[0].fecha_hora||"");
+  return {label,extra:Math.max(0,unique.length-1),total:unique.length};
 }
 function graphUpdateDateGeometry(){
   const occupied=[];
@@ -4253,9 +4263,9 @@ function graphEnhanceRenderedEdges(){
   graphState.visibleNet.edges.forEach(edge=>{
     const summary=graphEdgeEventSummary(edge);
     const st=graphRelationStyle(edge.relation);
-    const text=summary.extra?`${summary.label}  +${summary.extra}`:summary.label;
+    const text=summary.total>1?`${summary.label} · ${summary.total} fechas`:summary.label;
     const width=Math.max(58,text.length*4.6+14);
-    const g=svgNode("g",{class:"edge-date-pill",role:"button",tabindex:"0"});
+    const g=svgNode("g",{class:"edge-date-pill",role:"button",tabindex:"0","aria-label":summary.total>1?`Ver las ${summary.total} fechas del vínculo`:`Ver fecha del vínculo`});
     g.dataset.pillWidth=String(width);
     const rect=svgNode("rect",{x:-width/2,y:-8.5,width,height:17,rx:8.5,fill:"#ffffff",stroke:st.color,"stroke-width":"1",opacity:".96"});
     const txt=svgNode("text",{"text-anchor":"middle","dominant-baseline":"central",fill:st.color,"font-size":"7.1","font-family":"Segoe UI,Arial","font-weight":"900"});
@@ -5234,7 +5244,7 @@ document.addEventListener("mouseover",function(e){
     transition:opacity .12s ease,transform .12s ease;
     pointer-events:none;
   }
-  #graphDatePopover.show{display:block;opacity:1;transform:translateY(0)}
+  #graphDatePopover.show{display:block;opacity:1;transform:translateY(0);pointer-events:auto}
   #graphDatePopover.pinned{pointer-events:auto}
   .graph-date-pop-head{
     position:sticky;top:0;z-index:2;
@@ -5320,7 +5330,7 @@ document.addEventListener("mouseover",function(e){
 
     const seen=new Set();
     return list.filter(event=>{
-      const key=[event?.date||event?.fecha||event?.fecha_hora||"",event?.kind||event?.tipo||"",event?.note||event?.operadora||""].join("|");
+      const key=(event?.date||event?.fecha||event?.fecha_hora||"").toString().trim();
       if(seen.has(key))return false;
       seen.add(key);
       return true;
@@ -5340,7 +5350,7 @@ document.addEventListener("mouseover",function(e){
       graphDateLabelEls.forEach((pill,edgeId)=>{
         pill.dataset.edgeId=edgeId;
         pill.dataset.id=edgeId;
-        pill.removeAttribute("title");
+        pill.setAttribute("title","Clic para ver todas las fechas del vínculo");
         if(!pill.querySelector(".edge-date-hit")){
           const width=Number(pill.dataset.pillWidth||70);
           const hit=svgNode("rect",{
@@ -5371,6 +5381,13 @@ document.addEventListener("mouseover",function(e){
     return "";
   }
 
+  function mountPopoverForCurrentView(pop){
+    if(!pop)return;
+    const fullscreenRoot=document.fullscreenElement||document.querySelector("#graphView.fullscreen-fallback");
+    const target=fullscreenRoot||document.body;
+    if(pop.parentElement!==target)target.appendChild(pop);
+  }
+
   function positionPopover(evt){
     const pop=document.getElementById("graphDatePopover");
     if(!pop)return;
@@ -5390,6 +5407,7 @@ document.addEventListener("mouseover",function(e){
     const edge=findGraphEdge(edgeId);
     const pop=document.getElementById("graphDatePopover");
     if(!edge||!pop)return;
+    mountPopoverForCurrentView(pop);
 
     const nodes=new Map((graphState.fullNet?.nodes||graphState.visibleNet?.nodes||[]).map(n=>[n.id,n]));
     const source=nodes.get(edge.source)?.label||edge.source;
@@ -5461,6 +5479,7 @@ document.addEventListener("mouseover",function(e){
     if(popPinned)return;
     const from=e.target?.closest?.(".edge-date-pill,.graph-edge-clickable,.links path");
     if(!from)return;
+    if(e.relatedTarget?.closest?.("#graphDatePopover"))return;
     const to=e.relatedTarget?.closest?.(".edge-date-pill,.graph-edge-clickable,.links path");
     if(from!==to)hideDates(false);
   },true);
@@ -5503,6 +5522,16 @@ document.addEventListener("mouseover",function(e){
       deleteSelectedGraphNode();
     }
   },true);
+
+  document.getElementById("graphDatePopover")?.addEventListener("mouseleave",()=>{
+    if(!popPinned)hideDates(false);
+  });
+
+  document.addEventListener("fullscreenchange",()=>{
+    const pop=document.getElementById("graphDatePopover");
+    if(pop)mountPopoverForCurrentView(pop);
+    if(lastEdgeId)hideDates(true);
+  });
 
   window.addEventListener("resize",()=>{
     if(lastEdgeId)hideDates(true);
@@ -6594,6 +6623,551 @@ window.dispatchEvent(new CustomEvent("divincri:global-analytics-ready"));
 })();
 </script>
 <!-- ================= FIN ANALÍTICA GLOBAL DE ACCESOS ================= -->
+
+
+<!-- ============================================================
+     CENTRO PROFESIONAL DE INTELIGENCIA V10
+     Mejora integrada: caso, filtros, alertas, rutas, radar y riesgo
+     ============================================================ -->
+<style id="pro-intel-v10-styles">
+  :root{
+    --pro-risk-low:#138a50;
+    --pro-risk-medium:#d49716;
+    --pro-risk-high:#c5323f;
+    --pro-night:#071b12;
+    --pro-night-2:#0b2a1b;
+  }
+  .pro-case-command{
+    margin:0 0 16px;
+    overflow:hidden;
+    border:1px solid var(--border);
+    border-radius:20px;
+    background:rgba(255,255,255,.98);
+    box-shadow:var(--shadow-md);
+  }
+  .pro-case-head{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:15px 17px;color:#fff;
+    background:linear-gradient(115deg,var(--pnp-950),var(--pnp-800) 62%,var(--pnp-600));
+    border-bottom:3px solid var(--gold-500);
+  }
+  .pro-case-title{display:flex;align-items:center;gap:12px;min-width:0}
+  .pro-case-symbol{
+    width:43px;height:43px;display:grid;place-items:center;flex:0 0 auto;
+    border:1px solid rgba(239,212,129,.46);border-radius:13px;
+    color:#ffe8a5;background:rgba(255,255,255,.08)
+  }
+  .pro-case-symbol svg{width:23px;height:23px}
+  .pro-case-title b{display:block;font-size:13px;letter-spacing:.25px}
+  .pro-case-title span{display:block;margin-top:4px;color:#cfe1d6;font-size:9px}
+  .pro-case-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+  .pro-case-actions button{min-height:35px;box-shadow:none;font-size:9px}
+  .pro-case-actions .light{background:rgba(255,255,255,.96)}
+  .pro-case-body{padding:14px}
+  .pro-case-grid{
+    display:grid;grid-template-columns:minmax(230px,1.15fr) repeat(5,minmax(115px,.7fr));gap:10px
+  }
+  .pro-case-field,.pro-case-kpi{
+    min-height:76px;padding:11px 12px;border:1px solid #dce6df;border-radius:14px;background:#fbfdfc
+  }
+  .pro-case-field label,.pro-case-kpi span{
+    display:block;margin:0 0 7px;color:#728078;font-size:8px;font-weight:950;letter-spacing:.65px;text-transform:uppercase
+  }
+  .pro-case-field input{height:36px;padding:8px 10px;font-weight:900}
+  .pro-case-kpi b{display:block;color:var(--pnp-900);font-size:20px;line-height:1.05}
+  .pro-case-kpi small{display:block;margin-top:5px;color:#74827a;font-size:8px;line-height:1.25}
+  .pro-command-lower{
+    display:grid;grid-template-columns:minmax(330px,1fr) minmax(360px,1.3fr);gap:10px;margin-top:10px
+  }
+  .pro-mode-box,.pro-filter-box{
+    padding:11px 12px;border:1px solid #dce6df;border-radius:14px;background:#f7faf8
+  }
+  .pro-command-label{display:block;margin-bottom:7px;color:#65756c;font-size:8px;font-weight:950;letter-spacing:.7px;text-transform:uppercase}
+  .pro-mode-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .pro-mode-buttons button{
+    min-height:37px;color:#385047;background:#fff;border-color:#d4e0d8;box-shadow:none;font-size:9px
+  }
+  .pro-mode-buttons button.active{color:#fff;background:linear-gradient(180deg,var(--pnp-600),var(--pnp-900));border-color:var(--pnp-700)}
+  .pro-filter-controls{display:grid;grid-template-columns:1fr 1fr .85fr auto auto;gap:7px;align-items:end}
+  .pro-filter-controls label{margin:0;color:#68786f;font-size:7.5px}
+  .pro-filter-controls input,.pro-filter-controls select{height:36px;padding:7px 9px;font-size:9px}
+  .pro-filter-controls button{min-height:36px;padding:0 11px;box-shadow:none;font-size:8.5px}
+  .pro-filter-status{margin-top:7px;color:#718077;font-size:8px;line-height:1.4}
+
+  .pro-ops-layout{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);gap:14px;padding:14px;background:#f6f9f7}
+  .pro-ops-card{overflow:hidden;border:1px solid #dbe5de;border-radius:16px;background:#fff;box-shadow:var(--shadow-xs)}
+  .pro-ops-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 13px;border-bottom:1px solid #e0e8e3;background:linear-gradient(180deg,#fff,#f7faf8)}
+  .pro-ops-card-head b{color:var(--pnp-900);font-size:10px;text-transform:uppercase;letter-spacing:.55px}
+  .pro-ops-card-head span{color:#718077;font-size:8px}
+  .pro-ops-card-body{padding:12px}
+  .pro-alert-list{display:grid;gap:8px;max-height:480px;overflow:auto}
+  .pro-alert{
+    display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:9px;align-items:center;
+    padding:10px;border:1px solid #e0e8e3;border-radius:12px;background:#fbfdfc;cursor:pointer;transition:.16s ease
+  }
+  .pro-alert:hover{transform:translateY(-1px);border-color:#b8cbbf;box-shadow:var(--shadow-xs)}
+  .pro-alert-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;font-size:16px}
+  .pro-alert.high .pro-alert-icon{color:#9e1724;background:#fdecef}
+  .pro-alert.medium .pro-alert-icon{color:#8d5c09;background:#fff4d7}
+  .pro-alert.low .pro-alert-icon{color:#0a693a;background:#e8f6ed}
+  .pro-alert b{display:block;color:#233a2e;font-size:9.5px}
+  .pro-alert p{margin:3px 0 0;color:#69786f;font-size:8.3px;line-height:1.35}
+  .pro-alert-level{padding:4px 7px;border-radius:999px;font-size:7px;font-weight:950;text-transform:uppercase}
+  .pro-alert.high .pro-alert-level{color:#9e1724;background:#fdecef}
+  .pro-alert.medium .pro-alert-level{color:#895a09;background:#fff2cf}
+  .pro-alert.low .pro-alert-level{color:#0b6b3c;background:#e8f6ed}
+  .pro-empty-box{padding:28px 16px;color:#74827a;text-align:center;font-size:9px;line-height:1.5}
+
+  .pro-route-form{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .pro-route-form .full{grid-column:1/-1}
+  .pro-route-form input{height:39px;font-size:10px}
+  .pro-route-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+  .pro-route-actions button{min-height:36px;box-shadow:none;font-size:8.5px}
+  .pro-route-result{margin-top:11px;padding:10px;border:1px dashed #cbd9d0;border-radius:13px;background:#f8fbf9;min-height:76px}
+  .pro-route-chain{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .pro-route-node{padding:7px 9px;border:1px solid #d8e3dc;border-radius:10px;background:#fff;color:#263d31;font-size:8.5px;font-weight:900}
+  .pro-route-arrow{color:var(--pnp-600);font-size:16px;font-weight:900}
+  .pro-route-meta{margin-top:8px;color:#718077;font-size:8px;line-height:1.4}
+  .pro-radar-levels{display:grid;gap:8px;margin-top:12px}
+  .pro-radar-level{padding:9px 10px;border:1px solid #dce6df;border-radius:11px;background:#fff}
+  .pro-radar-level b{display:block;color:var(--pnp-800);font-size:8.5px}
+  .pro-radar-level span{display:block;margin-top:4px;color:#6d7c73;font-size:8px;line-height:1.4}
+
+  .pro-intel-drawer{
+    position:fixed;right:15px;top:78px;z-index:47000;width:min(390px,calc(100vw - 30px));max-height:calc(100vh - 94px);
+    display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(239,212,129,.54);border-radius:19px;
+    background:#fff;box-shadow:0 28px 75px rgba(2,25,15,.28);transform:translateX(calc(100% + 35px));opacity:0;visibility:hidden;
+    transition:transform .22s ease,opacity .22s ease,visibility .22s ease
+  }
+  .pro-intel-drawer.show{transform:translateX(0);opacity:1;visibility:visible}
+  .pro-drawer-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 15px;color:#fff;background:linear-gradient(135deg,var(--pnp-950),var(--pnp-700));border-bottom:3px solid var(--gold-500)}
+  .pro-drawer-head b{display:block;font-size:11px;letter-spacing:.4px;text-transform:uppercase}
+  .pro-drawer-head span{display:block;margin-top:3px;color:#cfe1d6;font-size:8px}
+  .pro-drawer-close{width:33px;min-width:33px;height:33px;min-height:33px;padding:0;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.18);box-shadow:none;font-size:18px}
+  .pro-drawer-body{overflow:auto;padding:13px}
+  .pro-node-title{padding:12px;border:1px solid #dce6df;border-radius:14px;background:linear-gradient(145deg,#fbfdfc,#f3f8f5)}
+  .pro-node-title .type{display:inline-flex;padding:4px 7px;border-radius:999px;color:#fff;background:var(--node-color,var(--pnp-600));font-size:7px;font-weight:950;text-transform:uppercase;letter-spacing:.55px}
+  .pro-node-title h3{margin:8px 0 0;color:var(--pnp-950);font-size:17px;line-height:1.15;word-break:break-word}
+  .pro-node-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+  .pro-node-stat{padding:9px;border:1px solid #dfe8e2;border-radius:11px;background:#fff}
+  .pro-node-stat span{display:block;color:#738179;font-size:7px;font-weight:950;text-transform:uppercase}
+  .pro-node-stat b{display:block;margin-top:4px;color:#183628;font-size:11px;line-height:1.25}
+  .pro-risk-card{margin-top:9px;padding:11px;border:1px solid #dce6df;border-radius:13px;background:#f8fbf9}
+  .pro-risk-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .pro-risk-top b{font-size:10px;color:#213a2d}.pro-risk-top strong{font-size:17px;color:var(--risk-color)}
+  .pro-risk-track{height:9px;margin-top:8px;overflow:hidden;border-radius:999px;background:#e4ebe7}
+  .pro-risk-fill{height:100%;width:var(--risk-width);border-radius:inherit;background:var(--risk-color);transition:width .3s ease}
+  .pro-risk-card p{margin:7px 0 0;color:#6b7a71;font-size:8px;line-height:1.4}
+  .pro-related-title{margin:12px 0 7px;color:#53665b;font-size:8px;font-weight:950;letter-spacing:.55px;text-transform:uppercase}
+  .pro-related-list{display:grid;gap:6px}
+  .pro-related-item{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:8px 9px;border:1px solid #dfe8e2;border-radius:10px;background:#fff;cursor:pointer}
+  .pro-related-item:hover{background:#f5faf7}.pro-related-item b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#2b4336;font-size:8.5px}.pro-related-item span{color:#78867e;font-size:7.5px}
+  .pro-drawer-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}
+  .pro-drawer-actions button{min-height:34px;box-shadow:none;font-size:8px}
+
+  .pro-time-year{margin:4px 0 14px;padding:8px 11px;border-left:4px solid var(--gold-500);border-radius:0 11px 11px 0;color:var(--pnp-900);background:#fff7e3;font-size:13px;font-weight:950}
+  .pro-time-event{display:grid;grid-template-columns:112px 18px minmax(0,1fr);gap:9px;position:relative;padding-bottom:12px}
+  .pro-time-event::after{content:"";position:absolute;left:120px;top:17px;bottom:-2px;width:1px;background:#cfdbd3}
+  .pro-time-date{text-align:right;color:var(--pnp-700);font-size:8.5px;font-weight:900;line-height:1.35}
+  .pro-time-dot{position:relative;z-index:1;width:10px;height:10px;margin-top:5px;border:2px solid #fff;border-radius:50%;background:var(--pnp-500);box-shadow:0 0 0 2px rgba(19,128,79,.18)}
+  .pro-time-card{padding:9px 10px;border:1px solid #dce6df;border-radius:11px;background:#fff}
+  .pro-time-card b{display:block;color:#21392c;font-size:9.5px}.pro-time-card p{margin:4px 0 0;color:#6b7971;font-size:8.3px;line-height:1.4}
+
+  .graph-node .free-icon{transform-box:fill-box;transform-origin:center;transition:transform .16s ease,filter .16s ease}
+  .graph-node.selected .free-icon{transform:translate(0px,-15px) scale(1.72)!important;filter:url(#selectedGlow)!important}
+  .graph-node.selected .node-select-ring{r:39px!important}
+  .pro-node-risk-badge text{stroke:none!important;paint-order:normal!important}
+  .pro-route-node-active .free-icon{filter:drop-shadow(0 0 8px #d5a632)!important}
+  .pro-route-edge-active{stroke:#d5a632!important;stroke-width:5.4!important;opacity:1!important;filter:drop-shadow(0 0 4px rgba(213,166,50,.7))}
+  .pro-edge-hidden{opacity:.025!important;pointer-events:none!important}
+
+  body.pro-mode-investigation{background:linear-gradient(180deg,#06180f,#0a2a1a 42%,#071c12)}
+  body.pro-mode-investigation .panel,body.pro-mode-investigation .pro-case-command{border-color:#244536}
+  body.pro-mode-investigation #graphWrap{
+    background:linear-gradient(rgba(101,180,132,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(101,180,132,.055) 1px,transparent 1px),radial-gradient(circle at 50% 48%,rgba(63,167,105,.14),transparent 44%),#071b12!important;
+    background-size:40px 40px,40px 40px,auto,auto!important
+  }
+  body.pro-mode-investigation #graphWrap::after{box-shadow:inset 0 0 100px rgba(0,0,0,.3)}
+  body.pro-mode-investigation .graph-node text,body.pro-mode-investigation .graph-guides text{fill:#edf7f1!important;stroke:#071b12!important}
+  body.pro-mode-investigation .edge-date-labels text{stroke:#071b12!important}
+  body.pro-mode-investigation .edge-date-pill rect:not(.edge-date-hit){fill:#0c2a1b!important;opacity:.96!important}
+  body.pro-mode-investigation .graph-help{color:#d5e5dc;background:rgba(7,27,18,.9);border-color:#315343}
+  body.pro-mode-investigation .graph-help b{color:#ffe59a}
+  body.pro-mode-audit #graphWrap{background-color:#fff!important;background-image:linear-gradient(rgba(10,87,52,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(10,87,52,.04) 1px,transparent 1px)!important;background-size:28px 28px!important}
+
+  @media(max-width:1260px){.pro-case-grid{grid-template-columns:repeat(3,1fr)}.pro-case-field{grid-column:span 2}.pro-command-lower{grid-template-columns:1fr}}
+  @media(max-width:960px){.pro-ops-layout{grid-template-columns:1fr}.pro-filter-controls{grid-template-columns:1fr 1fr}.pro-filter-controls button{width:100%}}
+  @media(max-width:680px){
+    .pro-case-head{align-items:flex-start;flex-direction:column}.pro-case-actions{justify-content:flex-start}
+    .pro-case-grid{grid-template-columns:1fr 1fr}.pro-case-field{grid-column:1/-1}.pro-case-kpi{min-height:68px}
+    .pro-mode-buttons{grid-template-columns:1fr}.pro-filter-controls{grid-template-columns:1fr}
+    .pro-route-form{grid-template-columns:1fr}.pro-route-form .full{grid-column:auto}
+    .pro-intel-drawer{right:7px;top:7px;width:calc(100vw - 14px);max-height:calc(100vh - 14px)}
+    .pro-time-event{grid-template-columns:82px 14px 1fr}.pro-time-event::after{left:89px}
+  }
+</style>
+
+<script id="pro-intel-v10-script">
+(function(){
+  "use strict";
+  const STORE_CASE="DIVINCRI_CASE_CURRENT_V10";
+  const STORE_MODE="DIVINCRI_OPERATION_MODE_V10";
+  const state={from:"",to:"",minStrength:1,mode:localStorage.getItem(STORE_MODE)||"normal",activeRoute:null,lastNodeId:""};
+  const theme={numero:"#2563a9",imei:"#0f7a49",dni:"#b96a08",persona:"#7650b8",operadora:"#2d7885"};
+  const $=id=>document.getElementById(id);
+  const html=value=>typeof esc==="function"?esc(value):String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const unique=arr=>[...new Set(arr.filter(Boolean))];
+  const recordsNow=()=>{
+    const current=Array.isArray(CURRENT)?CURRENT:[];
+    const filtered=!!(CURRENT_QUERY||state.from||state.to||GRAPH_MODE==="search");
+    return filtered?current:(current.length?current:(Array.isArray(DB)?DB:[]));
+  };
+  const formatDate=value=>{
+    const t=typeof value==="number"?value:(typeof parseDatePE==="function"?parseDatePE(value):Date.parse(value));
+    if(!t)return value||"Sin fecha";
+    return new Intl.DateTimeFormat("es-PE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(t));
+  };
+  const dateOnly=value=>{
+    const t=typeof value==="number"?value:(typeof parseDatePE==="function"?parseDatePE(value):Date.parse(value));
+    return t?new Intl.DateTimeFormat("es-PE",{day:"2-digit",month:"2-digit",year:"numeric"}).format(new Date(t)):(value||"Sin fecha");
+  };
+
+  function installUI(){
+    if($("proIntelCaseCommand"))return;
+    const metrics=document.querySelector(".metrics");
+    if(metrics){
+      metrics.insertAdjacentHTML("afterend",`
+        <section class="pro-case-command" id="proIntelCaseCommand">
+          <div class="pro-case-head">
+            <div class="pro-case-title"><div class="pro-case-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/><path d="m15 3 3 3"/></svg></div><div><b>CENTRO DE CONTROL DEL CASO</b><span>Lectura rápida de conexiones, fechas, alertas y actividad relevante</span></div></div>
+            <div class="pro-case-actions"><button class="light" type="button" onclick="proIntelV10OpenOps()">Alertas y rutas</button><button class="gold" type="button" onclick="generateIntelligencePDF()">Generar informe PDF</button></div>
+          </div>
+          <div class="pro-case-body">
+            <div class="pro-case-grid">
+              <div class="pro-case-field"><label>Caso actual / referencia</label><input id="proCaseName" placeholder="Ej.: CASO 024-2026" value="${html(localStorage.getItem(STORE_CASE)||"")}"></div>
+              <div class="pro-case-kpi"><span>Objetivo analizado</span><b id="proCaseObjective">RED COMPLETA</b><small>Nodo o consulta activa</small></div>
+              <div class="pro-case-kpi"><span>Conexiones</span><b id="proCaseConnections">0</b><small>Vínculos únicos visibles</small></div>
+              <div class="pro-case-kpi"><span>Eventos / fechas</span><b id="proCaseDates">0</b><small>Registros del periodo</small></div>
+              <div class="pro-case-kpi"><span>Alertas</span><b id="proCaseAlerts">0</b><small>Patrones automáticos</small></div>
+              <div class="pro-case-kpi"><span>Última actividad</span><b id="proCaseLast">N/S</b><small>Fecha más reciente</small></div>
+            </div>
+            <div class="pro-command-lower">
+              <div class="pro-mode-box"><span class="pro-command-label">Modo de análisis</span><div class="pro-mode-buttons"><button data-pro-mode="normal" onclick="proIntelV10SetMode('normal')">Normal</button><button data-pro-mode="investigation" onclick="proIntelV10SetMode('investigation')">Investigación</button><button data-pro-mode="audit" onclick="proIntelV10SetMode('audit')">Auditoría</button></div></div>
+              <div class="pro-filter-box"><span class="pro-command-label">Filtros avanzados</span><div class="pro-filter-controls"><label>Desde<input id="proDateFrom" type="date"></label><label>Hasta<input id="proDateTo" type="date"></label><label>Coincidencias mínimas<select id="proStrengthMin"><option value="1">1 o más</option><option value="3">3 o más</option><option value="10">10 o más</option></select></label><button type="button" onclick="proIntelV10ApplyFilters()">Aplicar</button><button class="light" type="button" onclick="proIntelV10ClearFilters()">Limpiar</button></div><div class="pro-filter-status" id="proFilterStatus">Sin filtro temporal. Se muestran todos los registros disponibles.</div></div>
+            </div>
+          </div>
+        </section>`);
+    }
+
+    const tabs=document.querySelector("#grafo .tabs");
+    const graphView=$("graphView");
+    if(tabs&&graphView&&!$("intelOpsView")){
+      tabs.insertAdjacentHTML("beforeend",`<button class="tab" id="proOpsTabButton" onclick="openTab('intelOpsView',this)">Alertas y rutas</button>`);
+      graphView.insertAdjacentHTML("afterend",`
+        <div class="view" id="intelOpsView">
+          <div class="pro-ops-layout">
+            <section class="pro-ops-card"><div class="pro-ops-card-head"><div><b>Detector automático de alertas</b><span>Patrones calculados sobre la consulta y fechas activas</span></div><button class="light" type="button" onclick="proIntelV10Refresh()">Actualizar</button></div><div class="pro-ops-card-body"><div class="pro-alert-list" id="proAlertList"></div></div></section>
+            <section class="pro-ops-card"><div class="pro-ops-card-head"><div><b>Ruta y radar relacional</b><span>Encuentra caminos e identifica relaciones indirectas</span></div></div><div class="pro-ops-card-body">
+              <div class="pro-route-form"><label>Origen<input id="proRouteFrom" list="proRouteEntities" placeholder="Número, IMEI, DNI o persona"></label><label>Destino<input id="proRouteTo" list="proRouteEntities" placeholder="Número, IMEI, DNI o persona"></label><datalist id="proRouteEntities"></datalist></div>
+              <div class="pro-route-actions"><button type="button" onclick="proIntelV10FindRoute()">Buscar ruta</button><button class="light" type="button" onclick="proIntelV10UseSelectedOrigin()">Usar nodo seleccionado</button><button class="light" type="button" onclick="proIntelV10ClearRoute()">Limpiar ruta</button></div>
+              <div class="pro-route-result" id="proRouteResult"><div class="pro-empty-box">Indica un origen y un destino para calcular la ruta más corta.</div></div>
+              <div class="pro-radar-levels" id="proRadarLevels"><div class="pro-empty-box">Selecciona un nodo del grafo para analizar sus niveles 1, 2 y 3.</div></div>
+            </div></section>
+          </div>
+        </div>`);
+    }
+
+    document.body.insertAdjacentHTML("beforeend",`
+      <aside class="pro-intel-drawer" id="proIntelDrawer" aria-hidden="true"><div class="pro-drawer-head"><div><b>Panel de inteligencia</b><span>Ficha dinámica del nodo seleccionado</span></div><button class="pro-drawer-close" type="button" onclick="proIntelV10CloseDrawer()">×</button></div><div class="pro-drawer-body" id="proIntelDrawerBody"><div class="pro-empty-box">Selecciona un nodo del grafo.</div></div></aside>`);
+
+    const legend=document.querySelector("#graphView .legend");
+    if(legend&&!legend.querySelector(".pro-strength-legend")){
+      legend.insertAdjacentHTML("beforeend",`<i class="legend-divider pro-strength-legend" aria-hidden="true"></i><span class="pro-strength-legend"><i class="legend-line" style="--line-color:#138a50"></i> 1–2 coincidencias</span><span class="pro-strength-legend"><i class="legend-line" style="--line-color:#d49716;border-top-width:3px"></i> 3–9 coincidencias</span><span class="pro-strength-legend"><i class="legend-line" style="--line-color:#c5323f;border-top-width:5px"></i> 10+ coincidencias</span>`);
+    }
+    $("proCaseName")?.addEventListener("input",e=>localStorage.setItem(STORE_CASE,e.target.value.trim()));
+    document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDrawer()});
+    setMode(state.mode,false);
+  }
+
+  function recordsForNode(node,records){
+    if(!node)return [];
+    const raw=String(node.raw??node.label??"").trim();
+    return (records||[]).filter(r=>{
+      if(node.type==="numero")return r.numero===raw;
+      if(node.type==="imei")return r.imei===raw;
+      if(node.type==="dni")return r.dni===raw;
+      if(node.type==="persona")return norm(r.nombre)===norm(raw)||norm(r.nombre)===norm(node.label);
+      if(node.type==="operadora")return norm(r.operadora)===norm(raw)||norm(r.operadora)===norm(node.label);
+      return false;
+    });
+  }
+
+  function nodeRisk(node,records,net){
+    const rel=recordsForNode(node,records);
+    const dates=unique(rel.map(r=>dateOnly(r.fecha_hora)));
+    const degree=Number(node.fullDegree??node.degree??0);
+    let diversity=0,changes=0;
+    if(node.type==="numero"){
+      diversity=unique(rel.map(r=>r.imei)).length+unique(rel.map(r=>r.dni)).length;
+      changes=Math.max(0,unique(rel.map(r=>norm(r.operadora))).length-1);
+    }else if(node.type==="imei") diversity=unique(rel.map(r=>r.numero)).length;
+    else if(node.type==="dni") diversity=unique(rel.map(r=>r.numero)).length;
+    else if(node.type==="persona") diversity=unique(rel.map(r=>r.dni)).length+unique(rel.map(r=>r.numero)).length;
+    else diversity=unique(rel.map(r=>r.numero)).length;
+    const score=Math.min(100,Math.round(degree*9+Math.min(rel.length,12)*2.5+Math.min(dates.length,10)*2+Math.max(0,diversity-1)*8+changes*7));
+    const level=score>=70?"ALTO":score>=40?"MEDIO":"BAJO";
+    const color=score>=70?"#c5323f":score>=40?"#d49716":"#138a50";
+    return {score,level,color,degree,events:rel.length,dates:dates.length,diversity,changes,records:rel};
+  }
+
+  function detectAlerts(records){
+    const alerts=[];
+    const groups=(field,valueField)=>{
+      const map=new Map();
+      records.forEach(r=>{const key=r[field];if(!key)return;if(!map.has(key))map.set(key,new Set());if(r[valueField])map.get(key).add(r[valueField])});
+      return map;
+    };
+    const imeiNums=groups("imei","numero"),numImeis=groups("numero","imei"),dniNums=groups("dni","numero"),numDnis=groups("numero","dni");
+    const numOps=new Map();records.forEach(r=>{if(!r.numero||!r.operadora)return;if(!numOps.has(r.numero))numOps.set(r.numero,new Set());numOps.get(r.numero).add(norm(r.operadora))});
+    imeiNums.forEach((set,key)=>{if(set.size>=2)alerts.push({id:"imei:"+key,nodeId:"imei:"+key,level:set.size>=5?"high":"medium",title:"IMEI compartido",detail:`${key} está relacionado con ${set.size} números distintos.`})});
+    numImeis.forEach((set,key)=>{if(set.size>=2)alerts.push({id:"numero-imei:"+key,nodeId:"numero:"+key,level:set.size>=5?"high":"medium",title:"Número con múltiples IMEI",detail:`${key} registra ${set.size} equipos IMEI asociados.`})});
+    dniNums.forEach((set,key)=>{if(set.size>=2)alerts.push({id:"dni:"+key,nodeId:"dni:"+key,level:set.size>=4?"high":"medium",title:"Documento con varias líneas",detail:`DNI ${key} aparece relacionado con ${set.size} números.`})});
+    numDnis.forEach((set,key)=>{if(set.size>=2)alerts.push({id:"numero-dni:"+key,nodeId:"numero:"+key,level:"high",title:"Número con múltiples titulares",detail:`${key} aparece asociado a ${set.size} DNI distintos.`})});
+    numOps.forEach((set,key)=>{if(set.size>=2)alerts.push({id:"numero-op:"+key,nodeId:"numero:"+key,level:set.size>=4?"high":"medium",title:"Cambio frecuente de operadora",detail:`${key} registra ${set.size} operadoras en el historial.`})});
+    const eventMap=new Map();records.forEach(r=>{[r.numero&&"numero:"+r.numero,r.imei&&"imei:"+r.imei].filter(Boolean).forEach(id=>eventMap.set(id,(eventMap.get(id)||0)+1))});
+    eventMap.forEach((count,id)=>{if(count>=10)alerts.push({id:"activity:"+id,nodeId:id,level:count>=20?"high":"medium",title:"Alta concentración de eventos",detail:`La entidad acumula ${count} eventos en el periodo analizado.`})});
+    const rank={high:3,medium:2,low:1};
+    return alerts.sort((a,b)=>rank[b.level]-rank[a.level]||a.title.localeCompare(b.title)).slice(0,40);
+  }
+
+  function filterRecords(records){
+    if(!state.from&&!state.to)return records.slice();
+    const from=state.from?new Date(state.from+"T00:00:00").getTime():-Infinity;
+    const to=state.to?new Date(state.to+"T23:59:59").getTime():Infinity;
+    return records.filter(r=>{const t=parseDatePE(r.fecha_hora);return t&&t>=from&&t<=to});
+  }
+
+  function queryRecords(q){
+    const base=Array.isArray(DB)?DB:[];
+    if(!q)return filterRecords(base);
+    const qd=onlyDigits(q),qn=norm(q);
+    const seed=base.filter(r=>(qd&&[r.numero,r.imei,r.dni].some(v=>v&&v.includes(qd)))||norm(r.nombre).includes(qn)||norm(r.operadora).includes(qn));
+    const nums=new Set(seed.map(r=>r.numero).filter(Boolean)),imeis=new Set(seed.map(r=>r.imei).filter(Boolean)),dnis=new Set(seed.map(r=>r.dni).filter(Boolean)),names=new Set(seed.map(r=>norm(r.nombre)).filter(Boolean));
+    return filterRecords(dedupe(base.filter(r=>nums.has(r.numero)||imeis.has(r.imei)||dnis.has(r.dni)||names.has(norm(r.nombre)))));
+  }
+
+  function refreshCurrent(q){
+    const query=typeof q==="string"?q:(CURRENT_QUERY||"");
+    CURRENT_QUERY=query;
+    GRAPH_MODE=query?"search":"all";
+    CURRENT=queryRecords(query);
+    renderAll(CURRENT,query);
+  }
+
+  function renderAlerts(records){
+    const list=$("proAlertList");if(!list)return;
+    const alerts=detectAlerts(records);
+    list.innerHTML=alerts.length?alerts.map(a=>`<article class="pro-alert ${a.level}" onclick="proIntelV10FocusNode('${encodeURIComponent(a.nodeId)}')"><div class="pro-alert-icon">${a.level==="high"?"🚨":a.level==="medium"?"⚠":"ℹ"}</div><div><b>${html(a.title)}</b><p>${html(a.detail)}</p></div><span class="pro-alert-level">${a.level==="high"?"Alto":a.level==="medium"?"Medio":"Bajo"}</span></article>`).join(""):`<div class="pro-empty-box">No se detectaron alertas automáticas con los registros y filtros actuales.</div>`;
+    if($("proCaseAlerts"))$("proCaseAlerts").textContent=alerts.length;
+  }
+
+  function graphData(records){
+    try{return buildNetwork(records,CURRENT_QUERY||"")}catch(e){return {nodes:[],edges:[]}}
+  }
+
+  function updateCaseCenter(records){
+    const net=graphData(records);
+    const times=records.map(r=>parseDatePE(r.fecha_hora)).filter(Boolean).sort((a,b)=>b-a);
+    const focus=graphState?.options?.selectedId||graphState?.options?.focusId||"";
+    const focusNode=net.nodes.find(n=>n.id===focus)||graphState?.fullNet?.nodes?.find(n=>n.id===focus);
+    const objective=CURRENT_QUERY||focusNode?.label||"RED COMPLETA";
+    if($("proCaseObjective"))$("proCaseObjective").textContent=objective;
+    if($("proCaseConnections"))$("proCaseConnections").textContent=(net.edges||[]).length;
+    if($("proCaseDates"))$("proCaseDates").textContent=records.length;
+    if($("proCaseLast"))$("proCaseLast").textContent=times.length?new Intl.DateTimeFormat("es-PE",{day:"2-digit",month:"2-digit",year:"numeric"}).format(new Date(times[0])):"N/S";
+    const status=$("proFilterStatus");
+    if(status)status.textContent=(state.from||state.to)?`Filtro activo: ${state.from?dateOnly(state.from):"inicio"} a ${state.to?dateOnly(state.to):"actualidad"}. ${records.length} registros cumplen el periodo.`:`Sin filtro temporal. Se muestran ${records.length} registros disponibles.`;
+    populateRouteEntities(records);
+    renderAlerts(records);
+  }
+
+  function populateRouteEntities(records){
+    const dl=$("proRouteEntities");if(!dl)return;
+    const net=graphData(records);
+    dl.innerHTML=(net.nodes||[]).slice().sort((a,b)=>a.type.localeCompare(b.type)||a.label.localeCompare(b.label)).map(n=>`<option value="${html(n.label)}">${html(n.type.toUpperCase())}</option>`).join("");
+  }
+
+  function edgeStrength(edge){
+    const count=Math.max(1,Number(edge?.count)||Number(edge?.events?.length)||1);
+    if(count>=10)return {count,color:"#c5323f",width:5.2,label:"ALTA"};
+    if(count>=3)return {count,color:"#d49716",width:3.2,label:"MEDIA"};
+    return {count,color:"#138a50",width:1.7,label:"BAJA"};
+  }
+
+  function applyGraphVisuals(){
+    if(typeof graphState==="undefined"||!graphState.visibleNet)return;
+    const edgeMap=new Map((graphState.visibleNet.edges||[]).map(e=>[e.id,e]));
+    graphState.edgeEls?.forEach((path,id)=>{
+      const edge=edgeMap.get(id);if(!edge)return;
+      const s=edgeStrength(edge),hidden=s.count<state.minStrength;
+      path.setAttribute("stroke",s.color);path.setAttribute("stroke-width",String(s.width));path.dataset.strength=s.label;
+      path.classList.toggle("pro-edge-hidden",hidden);
+      if(state.activeRoute?.edgeIds?.has(id))path.classList.add("pro-route-edge-active");else path.classList.remove("pro-route-edge-active");
+    });
+    graphState.labelEls?.forEach((label,id)=>{const edge=edgeMap.get(id),s=edgeStrength(edge);label.style.display=s.count<state.minStrength?"none":"";label.querySelector("text")?.setAttribute("fill",s.color)});
+    if(typeof graphDateLabelEls!=="undefined")graphDateLabelEls.forEach((pill,id)=>{
+      const edge=edgeMap.get(id);if(!edge)return;const s=edgeStrength(edge),events=edge.events||[],total=Math.max(events.length,edge.count||0),latest=events.slice().sort((a,b)=>parseDatePE(b.date)-parseDatePE(a.date))[0]?.date||edge.fechas?.[0]||"Sin fecha";
+      pill.style.display=s.count<state.minStrength?"none":"";
+      const text=total>1?`📅 ${dateOnly(latest)} · +${total-1} eventos`:`📅 ${dateOnly(latest)}`;
+      const width=Math.max(70,text.length*4.7+16);pill.dataset.pillWidth=String(width);
+      const rect=pill.querySelector("rect:not(.edge-date-hit)"),hit=pill.querySelector(".edge-date-hit"),tx=pill.querySelector("text");
+      if(rect){rect.setAttribute("x",String(-width/2));rect.setAttribute("width",String(width));rect.setAttribute("stroke",s.color)}
+      if(hit){hit.setAttribute("x",String(-width/2-7));hit.setAttribute("width",String(width+14))}
+      if(tx){tx.textContent=text;tx.setAttribute("fill",s.color)}
+    });
+    if(typeof graphUpdateDateGeometry==="function")graphUpdateDateGeometry();
+
+    const allNodes=new Map([...(graphState.fullNet?.nodes||[]),...(graphState.visibleNet?.nodes||[])].map(n=>[n.id,n]));
+    graphState.nodeEls?.forEach((g,id)=>{
+      const node=allNodes.get(id);if(!node)return;const r=nodeRisk(node,graphState.records||recordsNow(),graphState.fullNet);
+      g.dataset.risk=String(r.score);g.classList.toggle("pro-route-node-active",!!state.activeRoute?.nodeIds?.has(id));
+      let badge=g.querySelector(".pro-node-risk-badge");
+      if(!badge){badge=svgNode("g",{class:"pro-node-risk-badge",transform:"translate(-27 -40)"});const bg=svgNode("rect",{x:-14,y:-7,width:28,height:14,rx:7,fill:r.color,stroke:"#fff","stroke-width":"1.5"});const text=svgNode("text",{"text-anchor":"middle","dominant-baseline":"central",fill:"#fff","font-size":"6.5","font-family":"Segoe UI,Arial","font-weight":"950"});badge.append(bg,text);g.appendChild(badge)}
+      badge.querySelector("rect")?.setAttribute("fill",r.color);const bt=badge.querySelector("text");if(bt)bt.textContent=String(r.score);
+      if(state.activeRoute){g.setAttribute("opacity",state.activeRoute.nodeIds.has(id)?"1":".12")}
+    });
+  }
+
+  function neighborsFor(nodeId,net){
+    const byId=new Map((net.nodes||[]).map(n=>[n.id,n])),out=[];
+    (net.edges||[]).forEach(e=>{if(e.source===nodeId)out.push({node:byId.get(e.target),edge:e});else if(e.target===nodeId)out.push({node:byId.get(e.source),edge:e})});
+    return out.filter(x=>x.node).sort((a,b)=>(b.edge.count||0)-(a.edge.count||0));
+  }
+
+  function radarData(nodeId,net){
+    const adj=new Map((net.nodes||[]).map(n=>[n.id,[]]));
+    (net.edges||[]).forEach(e=>{adj.get(e.source)?.push(e.target);adj.get(e.target)?.push(e.source)});
+    const seen=new Set([nodeId]),levels=[];let frontier=[nodeId];
+    for(let level=1;level<=3;level++){
+      const next=[];frontier.forEach(id=>(adj.get(id)||[]).forEach(n=>{if(!seen.has(n)){seen.add(n);next.push(n)}}));levels.push(unique(next));frontier=unique(next);
+    }
+    return levels;
+  }
+
+  function renderRadar(node,net){
+    const box=$("proRadarLevels");if(!box)return;
+    if(!node){box.innerHTML=`<div class="pro-empty-box">Selecciona un nodo del grafo para analizar sus niveles 1, 2 y 3.</div>`;return}
+    const byId=new Map((net.nodes||[]).map(n=>[n.id,n]));
+    const levels=radarData(node.id,net);
+    box.innerHTML=levels.map((ids,i)=>`<div class="pro-radar-level"><b>Nivel ${i+1} · ${ids.length} entidad${ids.length===1?"":"es"}</b><span>${ids.slice(0,10).map(id=>html(byId.get(id)?.label||id)).join(" · ")||"Sin relaciones en este nivel"}${ids.length>10?` · +${ids.length-10} más`:""}</span></div>`).join("");
+  }
+
+  function renderDrawer(node,records){
+    if(!node)return;
+    state.lastNodeId=node.id;
+    const allRecords=records?.length?records:recordsNow(),net=graphData(allRecords),canonical=net.nodes.find(n=>n.id===node.id)||node,r=nodeRisk(canonical,allRecords,net),related=neighborsFor(canonical.id,net),times=r.records.map(x=>parseDatePE(x.fecha_hora)).filter(Boolean).sort((a,b)=>a-b);
+    const first=times.length?formatDate(times[0]):"N/S",last=times.length?formatDate(times[times.length-1]):"N/S";
+    const body=$("proIntelDrawerBody");if(!body)return;
+    body.innerHTML=`
+      <div class="pro-node-title" style="--node-color:${theme[canonical.type]||"#0d6b41"}"><span class="type">${html(canonical.type)}</span><h3>${html(canonical.label||canonical.raw)}</h3></div>
+      <div class="pro-node-grid"><div class="pro-node-stat"><span>Primera aparición</span><b>${html(first)}</b></div><div class="pro-node-stat"><span>Última actividad</span><b>${html(last)}</b></div><div class="pro-node-stat"><span>Conexiones directas</span><b>${r.degree}</b></div><div class="pro-node-stat"><span>Eventos / fechas</span><b>${r.events} / ${r.dates}</b></div></div>
+      <div class="pro-risk-card" style="--risk-color:${r.color};--risk-width:${r.score}%"><div class="pro-risk-top"><b>Índice de riesgo relacional · ${r.level}</b><strong>${r.score}%</strong></div><div class="pro-risk-track"><div class="pro-risk-fill"></div></div><p>Calculado por conexiones, frecuencia, diversidad de entidades, fechas y cambios observados. Es una prioridad analítica, no una conclusión de responsabilidad.</p></div>
+      <div class="pro-related-title">Entidades relacionadas</div><div class="pro-related-list">${related.slice(0,12).map(x=>`<div class="pro-related-item" onclick="proIntelV10FocusNode('${encodeURIComponent(x.node.id)}')"><b>${html(x.node.label)}</b><span>${x.edge.count||1} coincidencia${(x.edge.count||1)===1?"":"s"}</span></div>`).join("")||'<div class="pro-empty-box">Sin relaciones directas.</div>'}</div>
+      <div class="pro-drawer-actions"><button type="button" onclick="proIntelV10AnalyzeAround('${encodeURIComponent(canonical.id)}')">Analizar alrededor</button><button class="light" type="button" onclick="proIntelV10SetRouteOrigin('${encodeURIComponent(canonical.id)}')">Usar como origen</button><button class="light" type="button" onclick="focusSelectedGraphNode()">Aislar vínculos</button></div>`;
+    renderRadar(canonical,net);openDrawer();
+  }
+
+  function openDrawer(){$("proIntelDrawer")?.classList.add("show");$("proIntelDrawer")?.setAttribute("aria-hidden","false")}
+  function closeDrawer(){$("proIntelDrawer")?.classList.remove("show");$("proIntelDrawer")?.setAttribute("aria-hidden","true")}
+
+  function resolveNode(value,nodes){
+    const input=String(value||"").trim(),digits=onlyDigits(input),normal=norm(input);
+    return nodes.find(n=>n.id===input)||nodes.find(n=>digits&&onlyDigits(n.raw)===digits)||nodes.find(n=>norm(n.label)===normal)||nodes.find(n=>(digits&&onlyDigits(n.raw).includes(digits))||norm(n.label).includes(normal));
+  }
+
+  function findRoute(){
+    const records=recordsNow(),net=graphData(records),from=resolveNode($("proRouteFrom")?.value,net.nodes||[]),to=resolveNode($("proRouteTo")?.value,net.nodes||[]),result=$("proRouteResult");
+    if(!from||!to){if(result)result.innerHTML=`<div class="pro-empty-box">No se encontró el origen o el destino. Escribe una entidad existente.</div>`;return}
+    const adj=new Map((net.nodes||[]).map(n=>[n.id,[]]));
+    (net.edges||[]).forEach(e=>{adj.get(e.source)?.push({id:e.target,edge:e});adj.get(e.target)?.push({id:e.source,edge:e})});
+    const queue=[from.id],parent=new Map(),parentEdge=new Map(),seen=new Set([from.id]);
+    while(queue.length&&!seen.has(to.id)){const id=queue.shift();for(const item of adj.get(id)||[]){if(seen.has(item.id))continue;seen.add(item.id);parent.set(item.id,id);parentEdge.set(item.id,item.edge);queue.push(item.id)}}
+    if(!seen.has(to.id)){state.activeRoute=null;if(result)result.innerHTML=`<div class="pro-empty-box">No existe una ruta entre las entidades con los datos y filtros actuales.</div>`;applyGraphVisuals();return}
+    const pathIds=[];const edges=[];let cur=to.id;while(cur){pathIds.push(cur);if(cur===from.id)break;edges.push(parentEdge.get(cur));cur=parent.get(cur)}pathIds.reverse();edges.reverse();
+    const byId=new Map((net.nodes||[]).map(n=>[n.id,n]));state.activeRoute={nodeIds:new Set(pathIds),edgeIds:new Set(edges.map(e=>e.id)),from:from.id,to:to.id};
+    if(result)result.innerHTML=`<div class="pro-route-chain">${pathIds.map((id,i)=>`${i?'<span class="pro-route-arrow">→</span>':''}<span class="pro-route-node">${html(byId.get(id)?.label||id)}</span>`).join("")}</div><div class="pro-route-meta">Ruta más corta: ${Math.max(0,pathIds.length-1)} salto${pathIds.length-1===1?"":"s"}. El grafo resaltará en dorado los nodos y vínculos de la ruta que estén visibles.</div>`;
+    graphState.options.mode="all";graphState.options.focusId=from.id;GRAPH_TYPES.forEach(t=>graphState.options.types.add(t));renderGraph(records,from.raw||from.label);setTimeout(applyGraphVisuals,20);
+  }
+
+  function focusNode(encoded){
+    const id=decodeURIComponent(encoded),records=recordsNow(),net=graphData(records),node=net.nodes.find(n=>n.id===id)||graphState?.fullNet?.nodes?.find(n=>n.id===id);
+    if(!node){toast?.("La entidad no está disponible con los filtros actuales.");return}
+    state.activeRoute=null;graphState.options.selectedId=id;graphState.options.selectedIds?.clear?.();graphState.options.selectedIds?.add?.(id);graphState.options.focusId=id;graphState.options.mode="principal";graphState.options.types.add(node.type);renderGraph(records,node.raw||node.label);showNodeDetail(node,records);$("grafo")?.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  function setMode(mode,redraw=true){
+    state.mode=["normal","investigation","audit"].includes(mode)?mode:"normal";localStorage.setItem(STORE_MODE,state.mode);
+    document.body.classList.toggle("pro-mode-investigation",state.mode==="investigation");document.body.classList.toggle("pro-mode-audit",state.mode==="audit");
+    document.querySelectorAll("[data-pro-mode]").forEach(b=>b.classList.toggle("active",b.dataset.proMode===state.mode));
+    if(typeof graphState!=="undefined"){
+      if(state.mode==="investigation"){graphState.options.mode="connected";graphState.options.showLabels=false;state.minStrength=Math.max(3,state.minStrength);if($("proStrengthMin"))$("proStrengthMin").value=String(state.minStrength)}
+      else if(state.mode==="audit"){graphState.options.mode="all";graphState.options.showLabels=true;graphState.options.showDates=true;state.minStrength=1;if($("proStrengthMin"))$("proStrengthMin").value="1"}
+      else{graphState.options.mode="principal";graphState.options.showLabels=false;state.minStrength=Number($("proStrengthMin")?.value||1)}
+      if(redraw)renderGraph(recordsNow(),CURRENT_QUERY||"");
+    }
+  }
+
+  function renderProfessionalTimeline(records){
+    const el=$("timeline");if(!el)return;
+    const sorted=(records||[]).slice().filter(r=>parseDatePE(r.fecha_hora)).sort((a,b)=>parseDatePE(a.fecha_hora)-parseDatePE(b.fecha_hora));
+    if(!sorted.length){el.innerHTML=`<div class="empty">Sin eventos con fecha válida para construir la cronología.</div>`;return}
+    let year="",out="";
+    sorted.forEach(r=>{const d=new Date(parseDatePE(r.fecha_hora)),y=String(d.getFullYear());if(y!==year){year=y;out+=`<div class="pro-time-year">${year}</div>`}const date=new Intl.DateTimeFormat("es-PE",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit",hour12:false}).format(d).toUpperCase();out+=`<div class="pro-time-event"><div class="pro-time-date">${html(date)}</div><div class="pro-time-dot"></div><div class="pro-time-card"><b>${html(r.tipo||"Evento de vinculación")}</b><p>${html(r.numero||"Número N/S")} ↔ ${html(r.imei||"IMEI N/S")} · ${html(r.dni?"DNI "+r.dni:(r.nombre||"Identidad N/S"))} · ${html(r.operadora||"Operadora N/S")}</p></div></div>`});
+    el.innerHTML=out;
+  }
+
+  function openOps(){const button=$("proOpsTabButton");if(button)openTab("intelOpsView",button);$("grafo")?.scrollIntoView({behavior:"smooth",block:"start"});refreshAll()}
+  function refreshAll(){const records=recordsNow();updateCaseCenter(records);renderAlerts(records);if(state.lastNodeId){const net=graphData(records),node=net.nodes.find(n=>n.id===state.lastNodeId);if(node)renderRadar(node,net)}applyGraphVisuals()}
+
+  // Se conservan todas las funciones del archivo y se añaden las mejoras al final de cada renderizado.
+  const baseRenderGraph=typeof renderGraph==="function"?renderGraph:null;
+  if(baseRenderGraph){
+    const enhanced=function(records,query){baseRenderGraph(records,query);requestAnimationFrame(()=>{applyGraphVisuals();updateCaseCenter(Array.isArray(records)?records:recordsNow())})};
+    try{renderGraph=enhanced}catch(e){}window.renderGraph=enhanced;
+  }
+  const baseRenderAll=typeof renderAll==="function"?renderAll:null;
+  if(baseRenderAll){
+    const enhancedAll=function(records,query){baseRenderAll(records,query);renderProfessionalTimeline(records);updateCaseCenter(records)};
+    try{renderAll=enhancedAll}catch(e){}window.renderAll=enhancedAll;
+  }
+  const baseShowNodeDetail=typeof window.showNodeDetail==="function"?window.showNodeDetail:(typeof showNodeDetail==="function"?showNodeDetail:null);
+  if(baseShowNodeDetail){
+    const enhancedDetail=function(node,records){baseShowNodeDetail(node,records);renderDrawer(node,records)};
+    try{showNodeDetail=enhancedDetail}catch(e){}window.showNodeDetail=enhancedDetail;
+  }
+  // La búsqueda principal y "mostrar todo" respetan el intervalo temporal elegido.
+  window.runSearch=function(){const q=$("searchInput")?.value.trim()||"";refreshCurrent(q)};
+  window.showAll=function(){if($("searchInput"))$("searchInput").value="";refreshCurrent("")};
+  try{runSearch=window.runSearch;showAll=window.showAll}catch(e){}
+
+  window.proIntelV10ApplyFilters=function(){state.from=$("proDateFrom")?.value||"";state.to=$("proDateTo")?.value||"";state.minStrength=Math.max(1,Number($("proStrengthMin")?.value||1));if(state.from&&state.to&&state.from>state.to){toast?.("La fecha desde no puede ser posterior a la fecha hasta.");return}refreshCurrent(CURRENT_QUERY||$("searchInput")?.value.trim()||"")};
+  window.proIntelV10ClearFilters=function(){state.from="";state.to="";state.minStrength=1;if($("proDateFrom"))$("proDateFrom").value="";if($("proDateTo"))$("proDateTo").value="";if($("proStrengthMin"))$("proStrengthMin").value="1";refreshCurrent(CURRENT_QUERY||$("searchInput")?.value.trim()||"")};
+  window.proIntelV10SetMode=setMode;
+  window.proIntelV10OpenOps=openOps;
+  window.proIntelV10Refresh=refreshAll;
+  window.proIntelV10CloseDrawer=closeDrawer;
+  window.proIntelV10FindRoute=findRoute;
+  window.proIntelV10ClearRoute=function(){state.activeRoute=null;if($("proRouteResult"))$("proRouteResult").innerHTML=`<div class="pro-empty-box">Indica un origen y un destino para calcular la ruta más corta.</div>`;renderGraph(recordsNow(),CURRENT_QUERY||"")};
+  window.proIntelV10UseSelectedOrigin=function(){const id=graphState?.options?.selectedId;if(!id){toast?.("Selecciona primero un nodo del grafo.");return}const node=graphState.fullNet?.nodes?.find(n=>n.id===id);if(node&&$("proRouteFrom"))$("proRouteFrom").value=node.label;openOps()};
+  window.proIntelV10SetRouteOrigin=function(encoded){const id=decodeURIComponent(encoded),node=graphState.fullNet?.nodes?.find(n=>n.id===id)||graphData(recordsNow()).nodes.find(n=>n.id===id);if(node&&$("proRouteFrom"))$("proRouteFrom").value=node.label;openOps()};
+  window.proIntelV10FocusNode=focusNode;
+  window.proIntelV10AnalyzeAround=function(encoded){const id=decodeURIComponent(encoded);graphState.options.focusId=id;graphState.options.mode="principal";renderGraph(recordsNow(),graphState.fullNet?.nodes?.find(n=>n.id===id)?.raw||"");openOps();const node=graphState.fullNet?.nodes?.find(n=>n.id===id);if(node)renderRadar(node,graphState.fullNet)};
+
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>{installUI();setTimeout(()=>{renderProfessionalTimeline(recordsNow());refreshAll()},80)});
+  else{installUI();setTimeout(()=>{renderProfessionalTimeline(recordsNow());refreshAll()},80)}
+})();
+</script>
+<!-- ================= FIN CENTRO PROFESIONAL V10 ================= -->
 
 </body>
 </html>
