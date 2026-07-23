@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- Versión ordenada: importación por tipos, sin índice ni puntajes de riesgo -->
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -2315,14 +2316,43 @@ async function loadFiles(replace){
     }
   }
   mergeRecords(all,replace);
+  const input=document.getElementById("fileInput");
+  if(input)input.value="";
+}
+
+function prepareGraphAfterImport(){
+  try{
+    if(typeof graphState!=="undefined"&&graphState?.options){
+      graphState.options.selectedId=null;
+      graphState.options.selectedEdgeId=null;
+      graphState.options.focusId=null;
+      graphState.options.mode="all";
+      graphState.options.layout="columns";
+      graphState.options.proLayout="columns";
+      graphState.options.resolvedProLayout="columns";
+      graphState.options.showLabels=false;
+      graphState.options.selectedIds?.clear?.();
+      if(graphState.options.types instanceof Set){
+        graphState.options.types.clear();
+        ["numero","imei","dni","persona","operadora"].forEach(type=>graphState.options.types.add(type));
+      }
+      const layoutKey=(typeof STORAGE_KEY!=="undefined"?STORAGE_KEY:"divincri")+"_graph_layout_v8";
+      localStorage.setItem(layoutKey,"columns");
+    }
+  }catch(error){console.warn("No se pudo reiniciar la vista del grafo",error)}
 }
 
 function mergeRecords(records,replace){
   const parsed=dedupe(records);
   DB=replace?parsed:dedupe(DB.concat(parsed));
-  saveDB();updateStats();
-  if(DB.length) showAll(); else renderAll([],"");
-  toast((replace?"Base reemplazada. ":"Registros agregados: ")+parsed.length);
+  saveDB();updateStats();prepareGraphAfterImport();
+  if(document.getElementById("searchInput"))document.getElementById("searchInput").value="";
+  CURRENT_QUERY="";GRAPH_MODE="all";CURRENT=DB.slice();
+  if(DB.length) renderAll(CURRENT,""); else renderAll([],"");
+  requestAnimationFrame(()=>{
+    try{if(typeof applyGraphLayout==="function")applyGraphLayout("columns",{silent:true});}catch(error){console.warn(error)}
+  });
+  toast((replace?"Base reemplazada: ":"Registros agregados: ")+parsed.length+". Grafo ordenado por tipo.");
 }
 function importPasted(replace){mergeRecords(parseDelimited(document.getElementById("pasteArea").value),replace)}
 function loadDemo(){mergeRecords(DEMO,true);toast("Ejemplo cargado. Busca 917921152 o 015887000104565.")}
@@ -3127,7 +3157,7 @@ let graphState={
   transform:{x:0,y:0,k:1},dragNode:null,dragMoved:false,pan:null,
   records:[],query:"",center:null,fullNet:null,visibleNet:null,
   options:{
-    mode:"principal",
+    mode:"all",
     layout:"columns",
     showLabels:false,
     types:new Set(GRAPH_TYPES),
@@ -3364,56 +3394,100 @@ function graphLayoutRadial(net,center){
 }
 function graphLayoutColumns(net,center){
   const order=["persona","dni","numero","imei","operadora"];
-  const xMap={persona:150,dni:415,numero:685,imei:955,operadora:1220};
-  const columns=new Map(order.map(t=>[t,[]])),adj=graphAdjacency(net);
-  net.nodes.forEach(n=>{
-    n.w=graphCardWidth(n)+(n.id===center.id?14:0);
-    n.h=n.id===center.id?92:82;
-    n.isCenter=n.id===center.id;
-    (columns.get(n.type)||columns.get("numero")).push(n);
+  const adj=graphAdjacency(net);
+  const columns=new Map(order.map(type=>[type,[]]));
+  net.nodes.forEach(node=>{
+    node.w=graphCardWidth(node)+(node.id===center.id?14:0);
+    node.h=node.id===center.id?92:82;
+    node.isCenter=node.id===center.id;
+    (columns.get(node.type)||columns.get("numero")).push(node);
   });
-  const max=Math.max(1,...[...columns.values()].map(a=>a.length));
-  const H=Math.max(720,Math.min(1540,210+max*104)),W=1370,margin=105,centerGap=94;
 
-  function assignColumn(arr,type){
-    const central=arr.find(n=>n.id===center.id),others=arr.filter(n=>n.id!==center.id);
-    const x=xMap[type]||685;
-    if(central){central.x=x;central.y=H/2}
-    if(!others.length)return;
-    let positions=[];
-    if(central){
-      const topCount=Math.ceil(others.length/2),bottomCount=others.length-topCount;
-      for(let i=0;i<topCount;i++)positions.push(topCount===1?H/2-centerGap-55:margin+(H/2-centerGap-margin)*i/(topCount-1));
-      for(let i=0;i<bottomCount;i++)positions.push(bottomCount===1?H/2+centerGap+55:H/2+centerGap+(H-margin-(H/2+centerGap))*i/(bottomCount-1));
-    }else{
-      for(let i=0;i<others.length;i++)positions.push(others.length===1?H/2:margin+(H-2*margin)*i/(others.length-1));
+  columns.forEach(arr=>arr.sort((a,b)=>{
+    if(a.id===center.id)return -1;
+    if(b.id===center.id)return 1;
+    return (b.fullDegree||b.degree||0)-(a.fullDegree||a.degree||0)||(b.count||0)-(a.count||0)||a.label.localeCompare(b.label);
+  }));
+
+  // Cada tipo puede ocupar varias subcolumnas. Esto evita que decenas de
+  // nodos terminen uno encima de otro cuando se agregan varios archivos.
+  const maxRows=11;
+  const subColumnGap=222;
+  const zoneGap=34;
+  const outerMargin=72;
+  const zones=[];
+  let cursor=outerMargin;
+  order.forEach(type=>{
+    const arr=columns.get(type)||[];
+    const subColumns=Math.max(1,Math.ceil(Math.max(1,arr.length)/maxRows));
+    const zoneWidth=Math.max(230,subColumns*subColumnGap+54);
+    const start=cursor;
+    const end=start+zoneWidth;
+    const xValues=Array.from({length:subColumns},(_,index)=>start+zoneWidth/2+(index-(subColumns-1)/2)*subColumnGap);
+    zones.push({type,arr,start,end,width:zoneWidth,xValues,x:(start+end)/2,count:arr.length});
+    cursor=end+zoneGap;
+  });
+
+  const W=Math.max(1370,cursor-zoneGap+outerMargin);
+  const visibleRows=Math.max(1,...zones.map(zone=>Math.min(maxRows,Math.max(1,Math.ceil(zone.arr.length/zone.xValues.length)))));
+  const rowGap=104;
+  const H=Math.max(760,190+(visibleRows-1)*rowGap+150);
+
+  function makePositions(zone,excludeCenter=false){
+    const positions=[];
+    const count=Math.max(0,zone.arr.length-(excludeCenter?1:0));
+    if(!count)return positions;
+    const gridCount=count+(excludeCenter?1:0);
+    const rows=Math.min(maxRows,Math.ceil(gridCount/zone.xValues.length));
+    const totalHeight=(rows-1)*rowGap;
+    const firstY=H/2-totalHeight/2;
+    for(let row=0;row<rows;row++){
+      for(let col=0;col<zone.xValues.length;col++){
+        let y=firstY+row*rowGap;
+        // Alternar ligeramente las filas reduce líneas superpuestas sin perder orden.
+        if(zone.xValues.length>1&&col%2)y+=rowGap*.22;
+        const x=zone.xValues[col];
+        if(excludeCenter&&Math.abs(x-zone.x)<4&&Math.abs(y-H/2)<rowGap*.58)continue;
+        positions.push({x,y:Math.max(82,Math.min(H-82,y))});
+      }
     }
-    others.forEach((n,i)=>{n.x=x;n.y=positions[i]??H/2});
+    return positions.sort((a,b)=>a.y-b.y||a.x-b.x).slice(0,count);
   }
 
-  columns.forEach((arr,type)=>{
-    arr.sort((a,b)=>b.fullDegree-a.fullDegree||b.count-a.count||a.label.localeCompare(b.label));
-    assignColumn(arr,type);
+  // Primera asignación estable por prioridad y cantidad de conexiones.
+  zones.forEach(zone=>{
+    const central=zone.arr.find(node=>node.id===center.id);
+    const others=zone.arr.filter(node=>node.id!==center.id);
+    if(central){central.x=zone.x;central.y=H/2}
+    const positions=makePositions(zone,!!central);
+    others.forEach((node,index)=>{
+      const pos=positions[index]||{x:zone.x,y:H/2};
+      node.x=pos.x;node.y=pos.y;
+    });
   });
 
-  // Barycentric passes: entities with common relations stay close vertically,
-  // which noticeably reduces crossed lines in dense searches.
-  for(let pass=0;pass<4;pass++){
-    const sweep=pass%2===0?order:[...order].reverse();
-    sweep.forEach(type=>{
-      const arr=columns.get(type)||[],central=arr.find(n=>n.id===center.id),others=arr.filter(n=>n.id!==center.id);
-      const score=n=>{
-        const ys=(adj.get(n.id)||[]).map(x=>net.nodes.find(v=>v.id===x.id)?.y).filter(Number.isFinite);
-        return ys.length?ys.reduce((a,b)=>a+b,0)/ys.length:n.y;
+  // Pasadas baricéntricas: coloca verticalmente cerca los nodos que comparten
+  // relaciones y reduce de forma visible los cruces entre columnas.
+  for(let pass=0;pass<5;pass++){
+    const sweep=pass%2===0?zones:[...zones].reverse();
+    sweep.forEach(zone=>{
+      const central=zone.arr.find(node=>node.id===center.id);
+      const others=zone.arr.filter(node=>node.id!==center.id);
+      const score=node=>{
+        const ys=(adj.get(node.id)||[]).map(item=>net.nodes.find(candidate=>candidate.id===item.id)?.y).filter(Number.isFinite);
+        return ys.length?ys.reduce((sum,value)=>sum+value,0)/ys.length:node.y;
       };
-      others.sort((a,b)=>score(a)-score(b)||b.fullDegree-a.fullDegree||a.label.localeCompare(b.label));
-      columns.set(type,central?[central,...others]:others);
-      assignColumn(columns.get(type),type);
+      others.sort((a,b)=>score(a)-score(b)||(b.fullDegree||b.degree||0)-(a.fullDegree||a.degree||0)||a.label.localeCompare(b.label));
+      const positions=makePositions(zone,!!central);
+      others.forEach((node,index)=>{
+        const pos=positions[index]||{x:zone.x,y:H/2};
+        node.x=pos.x;node.y=pos.y;
+      });
     });
   }
 
-  const lanes=order.map(type=>({type,x:xMap[type],count:(columns.get(type)||[]).length,width:222}));
-  return {W,H,nodeById:new Map(net.nodes.map(n=>[n.id,n])),adj,lanes,layoutMode:"columns"};
+  const lanes=zones.map(zone=>({type:zone.type,x:zone.x,count:zone.count,width:zone.width}));
+  return {W,H,nodeById:new Map(net.nodes.map(node=>[node.id,node])),adj,lanes,layoutMode:"columns"};
 }
 function graphLayout(net,center){
   const useColumns=graphState.options.layout==="columns"||(graphState.options.mode==="all"&&net.nodes.length>42);
@@ -5966,17 +6040,12 @@ document.addEventListener("mouseover",function(e){
     return {adj,dist};
   }
   function chooseAutomaticLayout(net,center){
-    const n=net.nodes.length,e=net.edges.length;
+    const n=net.nodes.length;
     if(n<=8)return "radial";
-    const maxDegree=Math.max(0,...net.nodes.map(n=>n.degree||0));
-    const starRatio=n>1?maxDegree/(n-1):1;
-    const density=n>1?(2*e)/(n*(n-1)):0;
-    if(starRatio>=.52)return "concentric";
-    if(e<=n+1&&n<=42)return "tree";
-    if(n>=58)return "matrix";
-    if(density>=.13)return "force";
-    if(n>=32)return "spiral";
-    return "concentric";
+    if(n<=20)return "concentric";
+    // Desde 21 nodos se prioriza el orden por entidad. Evita que una carga
+    // grande termine en un diseño orgánico, espiral o con nodos amontonados.
+    return "columns";
   }
   function layoutRadial(net,center){
     const n=net.nodes.length,W=1360,H=Math.max(760,Math.min(1220,720+n*7)),cx=W/2,cy=H/2;
@@ -6267,11 +6336,11 @@ document.addEventListener("mouseover",function(e){
   }
 
   const loadFilesBase=typeof loadFiles==="function"?loadFiles:null;
-  if(loadFilesBase){window.loadFiles=async function(replace){graphState.options.proLayout="auto";localStorage.setItem(GRAPH_LAYOUT_KEY,"auto");return await loadFilesBase(replace)}}
+  if(loadFilesBase){window.loadFiles=async function(replace){graphState.options.proLayout="columns";localStorage.setItem(GRAPH_LAYOUT_KEY,"columns");return await loadFilesBase(replace)}}
   const importPastedBase=typeof importPasted==="function"?importPasted:null;
-  if(importPastedBase){window.importPasted=function(replace){graphState.options.proLayout="auto";localStorage.setItem(GRAPH_LAYOUT_KEY,"auto");return importPastedBase(replace)}}
+  if(importPastedBase){window.importPasted=function(replace){graphState.options.proLayout="columns";localStorage.setItem(GRAPH_LAYOUT_KEY,"columns");return importPastedBase(replace)}}
   const loadDemoBase=typeof loadDemo==="function"?loadDemo:null;
-  if(loadDemoBase){window.loadDemo=function(){graphState.options.proLayout="auto";localStorage.setItem(GRAPH_LAYOUT_KEY,"auto");return loadDemoBase()}}
+  if(loadDemoBase){window.loadDemo=function(){graphState.options.proLayout="columns";localStorage.setItem(GRAPH_LAYOUT_KEY,"columns");return loadDemoBase()}}
 
   document.addEventListener("keydown",e=>{
     if(!["Delete","Backspace"].includes(e.key)||isTypingTarget(e.target)||isGraphModalOpen())return;
@@ -6627,13 +6696,10 @@ window.dispatchEvent(new CustomEvent("divincri:global-analytics-ready"));
 
 <!-- ============================================================
      CENTRO PROFESIONAL DE INTELIGENCIA V10
-     Mejora integrada: caso, filtros, alertas, rutas, radar y riesgo
+     Mejora integrada: caso, filtros, alertas, rutas y radar
      ============================================================ -->
 <style id="pro-intel-v10-styles">
   :root{
-    --pro-risk-low:#138a50;
-    --pro-risk-medium:#d49716;
-    --pro-risk-high:#c5323f;
     --pro-night:#071b12;
     --pro-night-2:#0b2a1b;
   }
@@ -6752,12 +6818,6 @@ window.dispatchEvent(new CustomEvent("divincri:global-analytics-ready"));
   .pro-node-stat{padding:9px;border:1px solid #dfe8e2;border-radius:11px;background:#fff}
   .pro-node-stat span{display:block;color:#738179;font-size:7px;font-weight:950;text-transform:uppercase}
   .pro-node-stat b{display:block;margin-top:4px;color:#183628;font-size:11px;line-height:1.25}
-  .pro-risk-card{margin-top:9px;padding:11px;border:1px solid #dce6df;border-radius:13px;background:#f8fbf9}
-  .pro-risk-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .pro-risk-top b{font-size:10px;color:#213a2d}.pro-risk-top strong{font-size:17px;color:var(--risk-color)}
-  .pro-risk-track{height:9px;margin-top:8px;overflow:hidden;border-radius:999px;background:#e4ebe7}
-  .pro-risk-fill{height:100%;width:var(--risk-width);border-radius:inherit;background:var(--risk-color);transition:width .3s ease}
-  .pro-risk-card p{margin:7px 0 0;color:#6b7a71;font-size:8px;line-height:1.4}
   .pro-related-title{margin:12px 0 7px;color:#53665b;font-size:8px;font-weight:950;letter-spacing:.55px;text-transform:uppercase}
   .pro-related-list{display:grid;gap:6px}
   .pro-related-item{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:8px 9px;border:1px solid #dfe8e2;border-radius:10px;background:#fff;cursor:pointer}
@@ -6776,7 +6836,6 @@ window.dispatchEvent(new CustomEvent("divincri:global-analytics-ready"));
   .graph-node .free-icon{transform-box:fill-box;transform-origin:center;transition:transform .16s ease,filter .16s ease}
   .graph-node.selected .free-icon{transform:translate(0px,-15px) scale(1.72)!important;filter:url(#selectedGlow)!important}
   .graph-node.selected .node-select-ring{r:39px!important}
-  .pro-node-risk-badge text{stroke:none!important;paint-order:normal!important}
   .pro-route-node-active .free-icon{filter:drop-shadow(0 0 8px #d5a632)!important}
   .pro-route-edge-active{stroke:#d5a632!important;stroke-width:5.4!important;opacity:1!important;filter:drop-shadow(0 0 4px rgba(213,166,50,.7))}
   .pro-edge-hidden{opacity:.025!important;pointer-events:none!important}
@@ -6880,10 +6939,6 @@ window.dispatchEvent(new CustomEvent("divincri:global-analytics-ready"));
     document.body.insertAdjacentHTML("beforeend",`
       <aside class="pro-intel-drawer" id="proIntelDrawer" aria-hidden="true"><div class="pro-drawer-head"><div><b>Panel de inteligencia</b><span>Ficha dinámica del nodo seleccionado</span></div><button class="pro-drawer-close" type="button" onclick="proIntelV10CloseDrawer()">×</button></div><div class="pro-drawer-body" id="proIntelDrawerBody"><div class="pro-empty-box">Selecciona un nodo del grafo.</div></div></aside>`);
 
-    const legend=document.querySelector("#graphView .legend");
-    if(legend&&!legend.querySelector(".pro-strength-legend")){
-      legend.insertAdjacentHTML("beforeend",`<i class="legend-divider pro-strength-legend" aria-hidden="true"></i><span class="pro-strength-legend"><i class="legend-line" style="--line-color:#138a50"></i> 1–2 coincidencias</span><span class="pro-strength-legend"><i class="legend-line" style="--line-color:#d49716;border-top-width:3px"></i> 3–9 coincidencias</span><span class="pro-strength-legend"><i class="legend-line" style="--line-color:#c5323f;border-top-width:5px"></i> 10+ coincidencias</span>`);
-    }
     $("proCaseName")?.addEventListener("input",e=>localStorage.setItem(STORE_CASE,e.target.value.trim()));
     document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDrawer()});
     setMode(state.mode,false);
@@ -6902,23 +6957,6 @@ window.dispatchEvent(new CustomEvent("divincri:global-analytics-ready"));
     });
   }
 
-  function nodeRisk(node,records,net){
-    const rel=recordsForNode(node,records);
-    const dates=unique(rel.map(r=>dateOnly(r.fecha_hora)));
-    const degree=Number(node.fullDegree??node.degree??0);
-    let diversity=0,changes=0;
-    if(node.type==="numero"){
-      diversity=unique(rel.map(r=>r.imei)).length+unique(rel.map(r=>r.dni)).length;
-      changes=Math.max(0,unique(rel.map(r=>norm(r.operadora))).length-1);
-    }else if(node.type==="imei") diversity=unique(rel.map(r=>r.numero)).length;
-    else if(node.type==="dni") diversity=unique(rel.map(r=>r.numero)).length;
-    else if(node.type==="persona") diversity=unique(rel.map(r=>r.dni)).length+unique(rel.map(r=>r.numero)).length;
-    else diversity=unique(rel.map(r=>r.numero)).length;
-    const score=Math.min(100,Math.round(degree*9+Math.min(rel.length,12)*2.5+Math.min(dates.length,10)*2+Math.max(0,diversity-1)*8+changes*7));
-    const level=score>=70?"ALTO":score>=40?"MEDIO":"BAJO";
-    const color=score>=70?"#c5323f":score>=40?"#d49716":"#138a50";
-    return {score,level,color,degree,events:rel.length,dates:dates.length,diversity,changes,records:rel};
-  }
 
   function detectAlerts(records){
     const alerts=[];
@@ -6999,9 +7037,8 @@ window.dispatchEvent(new CustomEvent("divincri:global-analytics-ready"));
 
   function edgeStrength(edge){
     const count=Math.max(1,Number(edge?.count)||Number(edge?.events?.length)||1);
-    if(count>=10)return {count,color:"#c5323f",width:5.2,label:"ALTA"};
-    if(count>=3)return {count,color:"#d49716",width:3.2,label:"MEDIA"};
-    return {count,color:"#138a50",width:1.7,label:"BAJA"};
+    const width=count>=10?4.6:count>=3?3:1.7;
+    return {count,color:"#60776b",width,label:""};
   }
 
   function applyGraphVisuals(){
@@ -7027,14 +7064,9 @@ window.dispatchEvent(new CustomEvent("divincri:global-analytics-ready"));
     });
     if(typeof graphUpdateDateGeometry==="function")graphUpdateDateGeometry();
 
-    const allNodes=new Map([...(graphState.fullNet?.nodes||[]),...(graphState.visibleNet?.nodes||[])].map(n=>[n.id,n]));
     graphState.nodeEls?.forEach((g,id)=>{
-      const node=allNodes.get(id);if(!node)return;const r=nodeRisk(node,graphState.records||recordsNow(),graphState.fullNet);
-      g.dataset.risk=String(r.score);g.classList.toggle("pro-route-node-active",!!state.activeRoute?.nodeIds?.has(id));
-      let badge=g.querySelector(".pro-node-risk-badge");
-      if(!badge){badge=svgNode("g",{class:"pro-node-risk-badge",transform:"translate(-27 -40)"});const bg=svgNode("rect",{x:-14,y:-7,width:28,height:14,rx:7,fill:r.color,stroke:"#fff","stroke-width":"1.5"});const text=svgNode("text",{"text-anchor":"middle","dominant-baseline":"central",fill:"#fff","font-size":"6.5","font-family":"Segoe UI,Arial","font-weight":"950"});badge.append(bg,text);g.appendChild(badge)}
-      badge.querySelector("rect")?.setAttribute("fill",r.color);const bt=badge.querySelector("text");if(bt)bt.textContent=String(r.score);
-      if(state.activeRoute){g.setAttribute("opacity",state.activeRoute.nodeIds.has(id)?"1":".12")}
+      g.classList.toggle("pro-route-node-active",!!state.activeRoute?.nodeIds?.has(id));
+      if(state.activeRoute)g.setAttribute("opacity",state.activeRoute.nodeIds.has(id)?"1":".12");
     });
   }
 
@@ -7065,13 +7097,12 @@ window.dispatchEvent(new CustomEvent("divincri:global-analytics-ready"));
   function renderDrawer(node,records){
     if(!node)return;
     state.lastNodeId=node.id;
-    const allRecords=records?.length?records:recordsNow(),net=graphData(allRecords),canonical=net.nodes.find(n=>n.id===node.id)||node,r=nodeRisk(canonical,allRecords,net),related=neighborsFor(canonical.id,net),times=r.records.map(x=>parseDatePE(x.fecha_hora)).filter(Boolean).sort((a,b)=>a-b);
+    const allRecords=records?.length?records:recordsNow(),net=graphData(allRecords),canonical=net.nodes.find(n=>n.id===node.id)||node,related=neighborsFor(canonical.id,net),nodeRecords=recordsForNode(canonical,allRecords),times=nodeRecords.map(x=>parseDatePE(x.fecha_hora)).filter(Boolean).sort((a,b)=>a-b),dateCount=unique(nodeRecords.map(x=>dateOnly(x.fecha_hora))).length,degree=Number(canonical.fullDegree??canonical.degree??related.length);
     const first=times.length?formatDate(times[0]):"N/S",last=times.length?formatDate(times[times.length-1]):"N/S";
     const body=$("proIntelDrawerBody");if(!body)return;
     body.innerHTML=`
       <div class="pro-node-title" style="--node-color:${theme[canonical.type]||"#0d6b41"}"><span class="type">${html(canonical.type)}</span><h3>${html(canonical.label||canonical.raw)}</h3></div>
-      <div class="pro-node-grid"><div class="pro-node-stat"><span>Primera aparición</span><b>${html(first)}</b></div><div class="pro-node-stat"><span>Última actividad</span><b>${html(last)}</b></div><div class="pro-node-stat"><span>Conexiones directas</span><b>${r.degree}</b></div><div class="pro-node-stat"><span>Eventos / fechas</span><b>${r.events} / ${r.dates}</b></div></div>
-      <div class="pro-risk-card" style="--risk-color:${r.color};--risk-width:${r.score}%"><div class="pro-risk-top"><b>Índice de riesgo relacional · ${r.level}</b><strong>${r.score}%</strong></div><div class="pro-risk-track"><div class="pro-risk-fill"></div></div><p>Calculado por conexiones, frecuencia, diversidad de entidades, fechas y cambios observados. Es una prioridad analítica, no una conclusión de responsabilidad.</p></div>
+      <div class="pro-node-grid"><div class="pro-node-stat"><span>Primera aparición</span><b>${html(first)}</b></div><div class="pro-node-stat"><span>Última actividad</span><b>${html(last)}</b></div><div class="pro-node-stat"><span>Conexiones directas</span><b>${degree}</b></div><div class="pro-node-stat"><span>Eventos / fechas</span><b>${nodeRecords.length} / ${dateCount}</b></div></div>
       <div class="pro-related-title">Entidades relacionadas</div><div class="pro-related-list">${related.slice(0,12).map(x=>`<div class="pro-related-item" onclick="proIntelV10FocusNode('${encodeURIComponent(x.node.id)}')"><b>${html(x.node.label)}</b><span>${x.edge.count||1} coincidencia${(x.edge.count||1)===1?"":"s"}</span></div>`).join("")||'<div class="pro-empty-box">Sin relaciones directas.</div>'}</div>
       <div class="pro-drawer-actions"><button type="button" onclick="proIntelV10AnalyzeAround('${encodeURIComponent(canonical.id)}')">Analizar alrededor</button><button class="light" type="button" onclick="proIntelV10SetRouteOrigin('${encodeURIComponent(canonical.id)}')">Usar como origen</button><button class="light" type="button" onclick="focusSelectedGraphNode()">Aislar vínculos</button></div>`;
     renderRadar(canonical,net);openDrawer();
@@ -7168,6 +7199,15 @@ window.dispatchEvent(new CustomEvent("divincri:global-analytics-ready"));
 })();
 </script>
 <!-- ================= FIN CENTRO PROFESIONAL V10 ================= -->
+
+
+<style id="ordered-import-graph-fix">
+  /* Vista ordenada al importar varios archivos */
+  #graphWrap{min-height:680px}
+  .graph-guides text{font-size:10px!important;letter-spacing:.7px!important}
+  .pro-strength-legend{display:none!important}
+  @media(max-width:760px){#graphWrap{min-height:570px}}
+</style>
 
 </body>
 </html>
