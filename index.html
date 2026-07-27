@@ -7209,5 +7209,118 @@ window.dispatchEvent(new CustomEvent("divincri:global-analytics-ready"));
   @media(max-width:760px){#graphWrap{min-height:570px}}
 </style>
 
+
+
+<!-- ===== CORRECCIÓN: OCULTAR FECHAS AJENAS AL NODO SELECCIONADO ===== -->
+<style id="graph-related-dates-focus-style">
+  .edge-date-labels .edge-date-pill{
+    transition:opacity .16s ease,visibility .16s ease;
+  }
+  .edge-date-labels .edge-date-pill.date-unrelated{
+    opacity:0 !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+  .edge-date-labels .edge-date-pill.date-related{
+    opacity:1 !important;
+    visibility:visible !important;
+    pointer-events:auto !important;
+  }
+</style>
+<script id="graph-related-dates-focus-fix">
+(function(){
+  "use strict";
+
+  function selectedGraphNodeIds(hoverNodeId){
+    if(hoverNodeId)return new Set([hoverNodeId]);
+    const ids=new Set();
+    if(typeof graphState==="undefined")return ids;
+    const selectedIds=graphState.options?.selectedIds;
+    if(selectedIds instanceof Set)selectedIds.forEach(id=>ids.add(id));
+    if(graphState.options?.selectedId)ids.add(graphState.options.selectedId);
+    return ids;
+  }
+
+  function applyRelatedDateFocus(hoverNodeId=null){
+    if(typeof graphState==="undefined"||typeof graphDateLabelEls==="undefined")return;
+    const activeNodeIds=selectedGraphNodeIds(hoverNodeId);
+    const selectedEdgeId=graphState.options?.selectedEdgeId||"";
+    const edgeMap=new Map((graphState.visibleNet?.edges||[]).map(edge=>[edge.id,edge]));
+    const hasFocus=activeNodeIds.size>0||!!selectedEdgeId;
+
+    graphDateLabelEls.forEach((pill,edgeId)=>{
+      const edge=edgeMap.get(edgeId);
+      const related=!hasFocus
+        || (selectedEdgeId&&edgeId===selectedEdgeId)
+        || (!selectedEdgeId&&edge&&(activeNodeIds.has(edge.source)||activeNodeIds.has(edge.target)));
+
+      pill.classList.toggle("date-related",related);
+      pill.classList.toggle("date-unrelated",!related);
+      pill.setAttribute("aria-hidden",related?"false":"true");
+      if(!related) pill.removeAttribute("tabindex");
+      else pill.setAttribute("tabindex","0");
+    });
+  }
+
+  window.graphApplyRelatedDateFocus=applyRelatedDateFocus;
+
+  const baseHighlight=typeof window.graphHighlight==="function"?window.graphHighlight:null;
+  if(baseHighlight){
+    const enhancedHighlight=function(nodeId,on){
+      baseHighlight(nodeId,on);
+      applyRelatedDateFocus(on?nodeId:null);
+    };
+    try{graphHighlight=enhancedHighlight}catch(_){ }
+    window.graphHighlight=enhancedHighlight;
+  }
+
+  const baseEnhance=typeof window.graphEnhanceRenderedEdges==="function"?window.graphEnhanceRenderedEdges:null;
+  if(baseEnhance){
+    const enhancedEdges=function(){
+      baseEnhance();
+      applyRelatedDateFocus();
+    };
+    try{graphEnhanceRenderedEdges=enhancedEdges}catch(_){ }
+    window.graphEnhanceRenderedEdges=enhancedEdges;
+  }
+
+  const baseRender=typeof window.renderGraph==="function"?window.renderGraph:null;
+  if(baseRender){
+    const enhancedRender=function(records,query){
+      const result=baseRender(records,query);
+      requestAnimationFrame(()=>applyRelatedDateFocus());
+      return result;
+    };
+    try{renderGraph=enhancedRender}catch(_){ }
+    window.renderGraph=enhancedRender;
+  }
+
+  const baseSelectEdge=typeof window.selectGraphEdge==="function"?window.selectGraphEdge:null;
+  if(baseSelectEdge){
+    window.selectGraphEdge=function(edgeId){
+      const result=baseSelectEdge(edgeId);
+      applyRelatedDateFocus();
+      return result;
+    };
+  }
+
+  const baseClearSelection=typeof window.clearGraphSelection==="function"?window.clearGraphSelection:null;
+  if(baseClearSelection){
+    window.clearGraphSelection=function(){
+      const result=baseClearSelection();
+      applyRelatedDateFocus();
+      return result;
+    };
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",()=>requestAnimationFrame(()=>applyRelatedDateFocus()));
+  }else{
+    requestAnimationFrame(()=>applyRelatedDateFocus());
+  }
+})();
+</script>
+<!-- ===== FIN CORRECCIÓN DE FECHAS RELACIONADAS ===== -->
+
 </body>
 </html>
